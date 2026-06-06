@@ -49,7 +49,7 @@
 
       async #load() {
         const contribs = await fetch(
-          "/components/gh-contribs/gh-contribs.json"
+          "/data/gh-contribs.json"
         ).then((res) => res.json());
 
         let htmlString = "";

@@ -94,7 +94,7 @@ customElements.define(
           src="${iconsrc}"
           alt=""
         />
-        ${renderItem("/wares/", "Wares")} ${renderItem("/art/", "Art")}
+        ${renderItem("/wares/", "Wares")}
         ${renderItem("/music/", "Music")}
         <div class="site-header-indicator"></div>
       </nav>`;
@@ -121,7 +121,6 @@ customElements.define(
       if (this.#isSelected("/notes/")) return "/icons/glasses.png";
       if (this.#isSelected("/about/")) return "/icons/person.png";
       if (this.#isSelected("/wares/")) return "/icons/pot.png";
-      if (this.#isSelected("/art/")) return "/icons/art.png";
       if (this.#isSelected("/music/")) return "/icons/sound.png";
       return "/icons/yay_sheet.png";
     }
@@ -249,8 +248,6 @@ customElements.define(
     }
 
     connectedCallback() {
-      const geekringNumber = 288;
-
       const nobg = this.hasAttribute("nobg");
 
       if (!nobg) {
@@ -264,8 +261,7 @@ customElements.define(
           <p>
             <a href="/">Home</a> · <a href="/notes/">Notes</a> ·
             <a href="/about/">About</a> · <a href="/wares/">Software</a> ·
-            <a href="/art/">Art</a> ·
-            <a href="/music/">Music</a>
+ <a href="/music/">Music</a>
           </p>
           <p>
             <img
@@ -305,39 +301,6 @@ customElements.define(
             />
           </a>
           <h2>Webrings</h2>
-          <p>
-            <img
-              class="sm-icon pixelated"
-              alt=""
-              src="/icons/planet.png"
-              loading="lazy"
-            />
-            <a href="http://geekring.net/" target="_blank">geekring.net</a>
-            [<a
-              href="http://geekring.net/site/${geekringNumber}/previous"
-              target="_blank"
-              aria-label="Previous site"
-              >←</a
-            >
-            <a
-              href="http://geekring.net/site/${geekringNumber}/random"
-              target="_blank"
-              aria-label="Random site"
-              >⁙</a
-            >
-            <a
-              href="http://geekring.net/site/${geekringNumber}/next"
-              target="_blank"
-              aria-label="Next site"
-              >→</a
-            >
-            <a
-              href="http://geekring.net/site/${geekringNumber}/frameset"
-              target="_blank"
-              aria-label="Frameset browsing"
-              >▣</a
-            >]
-          </p>
           <p>
             <img
               class="sm-icon pixelated"
