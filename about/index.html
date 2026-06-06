@@ -45,7 +45,8 @@
   </section>
   <section class="sm-column-section center-text">
     <h2>What I'm up to now</h2>
-    <p class="text2-color">Last updated 5 Jun 2026.</p>
+    <p class="text2-color">Last updated 6 Jun 2026.</p>
+    <p>🕐 Local time: <span id="local-time"></span> IST (UTC+5:30)</p>
     <p>🛡️ Building security tooling — <a href="/wares/">NetPulse</a> and more</p>
     <p>🏴‍☠️ Active on Hack The Box — <strong>Script Kiddie</strong> rank, 6 badges</p>
     <p>🇯🇵 Learning Japanese on Duolingo (1,300+ day streak)</p>
@@ -311,4 +312,21 @@
     const v = Math.random();
     return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
   }
+</script>
+
+<script>
+  function updateLocalTime() {
+    const el = document.getElementById("local-time");
+    if (!el) return;
+    const now = new Date();
+    const time = now.toLocaleTimeString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    el.textContent = time;
+  }
+  updateLocalTime();
+  setInterval(updateLocalTime, 60_000);
 </script>
