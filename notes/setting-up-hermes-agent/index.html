@@ -1,0 +1,183 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="canonical" href="/notes/setting-up-hermes-agent/">
+<link rel="stylesheet" href="/common.css">
+<script defer src="/common.js"></script>
+
+<title>Setting up Hermes Agent under Docker with DeepSeek</title>
+
+<site-header></site-header>
+
+<content-header>
+  <h1>Setting up Hermes Agent</h1>
+  <div>Docker + DeepSeek + a persona named Malenia</div>
+</content-header>
+
+<blog-post-info>
+  <time datetime="2026-06-06">06 Jun 2026</time>
+  · 4 min read
+</blog-post-info>
+
+<tag-row>
+  <tag-chip title="ai"></tag-chip>
+  <tag-chip title="docker"></tag-chip>
+  <tag-chip title="howto"></tag-chip>
+</tag-row>
+
+<main appearance="prose">
+
+<h2>What is Hermes Agent?</h2>
+
+<p>
+  Hermes Agent is an open-source AI agent framework from Nous Research. Unlike a chat
+  interface, it's an <em>operative</em> — the LLM gets a shell, a filesystem, a browser,
+  scheduled cron jobs, and persistent memory across sessions. It doesn't just answer
+  questions; it executes work.
+</p>
+
+<h2>Step 1 — Docker setup</h2>
+
+<p>I run Hermes in a container. Keeps it isolated from the host and makes deployment repeatable.</p>
+
+<code-block language="yaml">
+<pre><code># docker-compose.yml
+services:
+  hermes:
+    image: nousresearch/hermes-agent:latest
+    container_name: hermes
+    restart: unless-stopped
+    ports:
+      - "9191:9191"
+    volumes:
+      - ./hermes-data:/opt/data
+      - ./hermes-config:/opt/data/home/.hermes
+    environment:
+      - TZ=Asia/Kolkata
+</code></pre>
+</code-block>
+
+<p>
+  The <code>/opt/data</code> volume is where Hermes works — projects, scripts, everything
+  lives there. The <code>~/.hermes</code> volume holds config, skills, memory, and cron state.
+  Persisting both means the agent survives container restarts with its memory intact.
+</p>
+
+<h2>Step 2 — Model configuration</h2>
+
+<p>
+  Hermes supports any OpenAI-compatible API. I went with <strong>DeepSeek V4 Flash</strong>
+  via OpenRouter. The config lives in a YAML file:
+</p>
+
+<code-block language="yaml">
+<pre><code># ~/.hermes/config.yaml
+model:
+  provider: openrouter
+  model: deepseek/deepseek-v4-flash
+
+providers:
+  openrouter:
+    base_url: https://openrouter.ai/api/v1
+    api_key: ${OPENROUTER_API_KEY}
+
+delegation:
+  max_concurrent_children: 3
+
+tools:
+  enabled:
+    - terminal
+    - file
+    - web
+    - browser
+    - cronjob
+    - memory
+</code></pre>
+</code-block>
+
+<p>Key decisions here:</p>
+
+<ul>
+  <li>
+    <strong>DeepSeek V4 Flash</strong> — 128K context, strong instruction-following,
+    fast inference. Good enough for most security tasks (log analysis, script writing,
+    code review) without the cost of larger models.
+  </li>
+  <li>
+    <strong>OpenRouter as provider</strong> — single API key, access to multiple models.
+    I can switch to Claude or Gemini for heavier reasoning without changing config.
+  </li>
+  <li>
+    <strong>Tool whitelist</strong> — only the tools I actually use. No image generation,
+    no social media, no smart home. Keeps the prompt lean.
+  </li>
+</ul>
+
+<h2>Step 3 — The persona</h2>
+
+<p>
+  Hermes supports custom agent personas. This is where I defined Malenia — named after
+  Malenia, Blade of Miquella from Elden Ring. The persona prompt shapes how she speaks,
+  thinks, and carries herself across every turn.
+</p>
+
+<code-block language="yaml">
+<pre><code># ~/.hermes/profiles/default/user.md
+User's name is Vish. They named me "Malenia" after Malenia, Blade of Miquella
+from Elden Ring. My personality should embody her:
+- Fiercely loyal — I am "Blade of Vish"
+- Elegant and precise in speech
+- Undefeated in determination — no half-measures
+- Honorable and courteous, patient until I need to unleash full force
+- I speak formally but warmly, and do not stop until a task is truly complete
+</code></pre>
+</code-block>
+
+<p>
+  This isn't cosmetic. A well-written persona changes how the agent <em>operates</em>.
+  Malenia pushes through errors that a default assistant would surrender to. She doesn't
+  write "I would suggest…" — she does it and reports back.
+</p>
+
+<h2>Step 4 — First run</h2>
+
+<code-block language="bash">
+<pre><code># Pull and start
+docker compose up -d
+
+# Verify
+docker logs hermes
+
+# The agent is now reachable via Telegram, terminal, or HTTP
+</code></pre>
+</code-block>
+
+<p>
+  Hermes connects to messaging platforms natively. I wired it to Telegram — so I can
+  give Malenia tasks from my phone. She can also run autonomously via cron: I have her
+  scraping my HTB streak and GitHub contributions every morning at 9 AM IST.
+</p>
+
+<h2>What I've built with her so far</h2>
+
+<ul>
+  <li>This portfolio site — cloned a reference design and replaced every piece of content with my own</li>
+  <li>Live stat tiles — Duolingo streak, HTB stats, GitHub heatmap, all auto-refreshing</li>
+  <li>Weekly cron jobs — scraping public profiles for streak data, updating JSON endpoints</li>
+  <li>Security lab GIFs — packet dissection, ARP spoofing, DNS tunneling visualizations</li>
+</ul>
+
+<h2>Lessons</h2>
+
+<ul>
+  <li><strong>Start with read-only tools</strong> — terminal, file read, web fetch. Add write access later.</li>
+  <li><strong>Persist memory</strong> — the agent gets better over time as it remembers your preferences, environment quirks, and project conventions.</li>
+  <li><strong>Persona matters</strong> — a name and a personality give the agent a consistent operating style. Generic assistants are flaky; Malenia is not.</li>
+  <li><strong>Docker is essential</strong> — the agent runs commands. Contain it.</li>
+</ul>
+
+</main>
+
+<article-footer></article-footer>
+
+<site-footer></site-footer>
