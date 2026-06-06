@@ -15,7 +15,7 @@ document.head.appendChild(iconLink);
 const alternateLink = document.createElement("link");
 alternateLink.rel = "alternate";
 alternateLink.type = "application/rss+xml";
-alternateLink.title = "vish portfolio notes";
+alternateLink.title = "Drago-Nair Notes";
 alternateLink.href = "/rss.xml";
 document.head.appendChild(alternateLink);
 
