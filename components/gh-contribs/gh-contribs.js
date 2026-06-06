@@ -43,6 +43,9 @@
             gh-contribs div[data-level="3"]::after {
               opacity: 1;
             }
+            gh-contribs div[data-level="4"]::after {
+              opacity: 1;
+            }
           </style>`
         );
       }
