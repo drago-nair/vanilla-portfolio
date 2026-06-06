@@ -52,7 +52,7 @@
 
       async #load() {
         const contribs = await fetch(
-          "/data/gh-contribs.json"
+          "/data/gh-contribs.json?t=" + Date.now()
         ).then((res) => res.json());
 
         let htmlString = "";
