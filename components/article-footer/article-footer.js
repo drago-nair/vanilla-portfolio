@@ -82,23 +82,23 @@ function renderSig() {
   const path = window.location.pathname;
 
   const introClause = html`Thanks for reading! `;
-  const guestbookClause = html`Oh, and before you go, sign
+  const guestbookClause = html`Before you go, drop a note in
     <a href="/guestbook/">the guestbook</a>! `;
-  const closingClause = html`See you around!
-    <cite><i>&mdash;Lean</i><img src="/icons/sig.png" alt="liyan" /></cite>`;
+  const closingClause = html`Stay curious.
+    <cite><i>&mdash;Vish</i></cite>`;
 
   let body = "";
   if (path.startsWith("/notes/")) {
-    body = html`I like making interactive visualisations for my
-      <a href="/notes/">programming blog</a>. Sometimes I do
-      <a href="/wares/">projects</a> too. `;
+    body = html`I write about cybersecurity, networking, and the
+      <a href="/notes/">tools I build</a>. Sometimes I break things
+      just to understand them. `;
   } else if (path.startsWith("/wares/")) {
-    body = html`I like making <a href="/wares/">software projects</a>. I also
-      keep a visual & interactive <a href="/notes/">programming blog</a>! `;
+    body = html`I build <a href="/wares/">security tools</a> and
+      experiments — from network intrusion detection to
+      hack-the-box challenges. `;
   } else {
-    body = html`I like creating <a href="/wares/">interactive things</a>,
-      meta-creating <a href="/art/">art</a> and writing interactive
-      <a href="/notes">blogs</a>! `;
+    body = html`I'm a cybersecurity geek who <a href="/wares/">builds things</a>,
+      breaks things, and writes about the journey. Welcome to my corner of the web. `;
   }
 
   return html`<blockquote>
