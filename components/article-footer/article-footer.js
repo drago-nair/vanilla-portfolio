@@ -10,7 +10,6 @@ customElements.define(
         ${renderSig()}
         <div>
           <article-reactions></article-reactions>
-          ${maybeRenderRss(this)}
         </div>
         ${maybeRenderSuggestions()}
       `;
@@ -69,43 +68,6 @@ customElements.define(
               }
             }
 
-            .rss-link {
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              text-align: center;
-              border: solid 1px var(--card-clr);
-              border-radius: 6px;
-              padding: 18px;
-
-              p {
-                margin: 0 auto 18px;
-              }
-
-              .rss-link-combo {
-                display: flex;
-                justify-content: center;
-              }
-              a {
-                display: block;
-                padding: 0 12px;
-                border: solid 1px var(--clr0);
-                border-top-left-radius: 12px;
-                border-bottom-left-radius: 12px;
-                box-sizing: border-box;
-                height: 30px;
-                line-height: 30px;
-                font-size: 12px;
-                color: var(--text2-clr);
-              }
-              button {
-                height: 30px;
-                border-top-left-radius: 0;
-                border-bottom-left-radius: 0;
-              }
-            }
-
             article-suggestions {
               margin: 120px auto;
             }
@@ -142,36 +104,6 @@ function renderSig() {
   return html`<blockquote>
     ${introClause}${body}${guestbookClause}${closingClause}
   </blockquote>`;
-}
-
-function maybeRenderRss(parent) {
-  if (!window.location.pathname.startsWith("/notes/")) return "";
-
-  setTimeout(() => {
-    parent
-      .querySelector(".rss-link-combo button")
-      .addEventListener("click", async (event) => {
-        event.preventDefault();
-        const href = parent.querySelector(".rss-link-combo a").href;
-        try {
-          await navigator.clipboard.writeText(href);
-          event.target.textContent = "Copied!";
-        } catch (e) {}
-      });
-  });
-
-  return html`
-    <aside class="rss-link">
-      <p>
-        Want me to spam your inbox? Me neither.<br />Forget newsletters; use
-        RSS!
-      </p>
-      <div class="rss-link-combo">
-        <a href="/rss.xml" target="_blank"> leanrada.com/rss.xml </a>
-        <button>Copy</button>
-      </div>
-    </aside>
-  `;
 }
 
 function maybeRenderSuggestions() {
