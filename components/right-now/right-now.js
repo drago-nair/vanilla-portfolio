@@ -67,7 +67,7 @@
           "reading RFCs for fun",
           "explaining the OSI model to Mishti",
           "contemplating the next exploit",
-          "decrypting thoughts with chai",
+          "decrypting packets, not chai",
           "debugging reality",
           "writing code that writes code",
           "lost in a man page somewhere",
@@ -81,8 +81,12 @@
           "convincing myself this is the last packet capture",
           "refactoring code I wrote at 1 AM last night",
           "scrolling exploit-db like it's Instagram",
-          "sipping chai, plotting the next lab",
+          "watching charts move slower than progress bars",
           "telling myself 'just one more room' on HTB",
+          "curling dumbbells, not just parentheses",
+          "one more set, then one more commit",
+          "lost in a book, ignoring the SIEM alerts",
+          "reading market moves like hex dumps",
         ];
         return funny[Math.floor(Math.random() * funny.length)];
       }
