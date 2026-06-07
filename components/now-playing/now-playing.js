@@ -196,16 +196,16 @@ customElements.define(
       const init = () => {
         intersectionObserver.disconnect();
         const [status, title] = this.querySelectorAll("span");
-        fetch("https://now-playing.leanrada.com/api")
+        fetch("/data/now-playing.json")
           .then((res) => res.json())
-          .then(({ name, imageURL, href, isPlayingNow }) => {
+          .then(({ name, artist, imageURL, href, isPlayingNow }) => {
+            if (!name) throw new Error("None playing");
             this.#isPlayingNow = isPlayingNow;
-            if (!href) throw new Error("None playing");
             this.#href = href;
-            this.querySelector("a").href = href;
-            this.querySelector("img").src = imageURL;
+            this.querySelector("a").href = href || "#";
+            this.querySelector("img").src = imageURL || this.querySelector("img").src;
             status.innerHTML = getStatusHTML(isPlayingNow);
-            title.textContent = name;
+            title.textContent = artist ? `${name} — ${artist}` : name;
           })
           .catch(() => {
             title.textContent = "none";
