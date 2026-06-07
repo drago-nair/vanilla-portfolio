@@ -63,6 +63,16 @@
           "recharging the batteries",
           "listening to music too loud",
           "pretending to be AFK",
+          "waiting for a reverse shell",
+          "reading RFCs for fun",
+          "explaining the OSI model to Mishti",
+          "contemplating the next exploit",
+          "decrypting thoughts with chai",
+          "debugging reality",
+          "writing code that writes code",
+          "lost in a man page somewhere",
+          "tuning the sniffer",
+          "waiting for the next CVE drop",
         ];
         return funny[Math.floor(Math.random() * funny.length)];
       }
