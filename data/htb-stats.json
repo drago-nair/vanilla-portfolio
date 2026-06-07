@@ -1,6 +1,11 @@
 {
-  "streak": 0,
-  "rank": "Script Kiddie",
+  "name": "MasterAnakin",
+  "full_name": "Vishnu Nair",
+  "updated": "2026-06-07",
   "badges": 6,
-  "updated": "2026-06-05"
+  "streak": null,
+  "rank": "Script Kiddie",
+  "rank_badge": "Script Kiddie",
+  "_note": "Rank from badge awarded 2024-09-11T12:08:51+00:00. Current rank may differ (API 401).",
+  "_streak_note": "Streak badge (Unwavering User) awarded 2025-11-22T10:25:37+00:00. Current streak unavailable (API 401)."
 }

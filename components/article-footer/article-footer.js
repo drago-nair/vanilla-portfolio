@@ -82,8 +82,6 @@ function renderSig() {
   const path = window.location.pathname;
 
   const introClause = html`Thanks for reading! `;
-  const guestbookClause = html`Before you go, drop a note in
-    <a href="/guestbook/">the guestbook</a>! `;
   const closingClause = html`Stay curious.
     <cite><i>&mdash;Vish</i></cite>`;
 
@@ -102,7 +100,7 @@ function renderSig() {
   }
 
   return html`<blockquote>
-    ${introClause}${body}${guestbookClause}${closingClause}
+    ${introClause}${body}${closingClause}
   </blockquote>`;
 }
 
