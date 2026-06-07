@@ -73,6 +73,16 @@
           "lost in a man page somewhere",
           "tuning the sniffer",
           "waiting for the next CVE drop",
+          "Mishti's personal belly-rub consultant",
+          "getting side-eyed by Mishti for not sharing snacks",
+          "debugging code, Mishti debugging my patience",
+          "petting Mishti while nmap does its thing",
+          "googling error codes at 2 AM",
+          "convincing myself this is the last packet capture",
+          "refactoring code I wrote at 1 AM last night",
+          "scrolling exploit-db like it's Instagram",
+          "sipping chai, plotting the next lab",
+          "telling myself 'just one more room' on HTB",
         ];
         return funny[Math.floor(Math.random() * funny.length)];
       }
