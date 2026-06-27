@@ -24,6 +24,12 @@ meta.name = "color-scheme";
 meta.content = "only dark";
 document.head.appendChild(meta);
 
+const goatScript = document.createElement("script");
+goatScript.setAttribute("data-goatcounter", "https://masteranakiin.goatcounter.com/count");
+goatScript.async = true;
+goatScript.src = "//gc.zgo.at/count.js";
+document.head.appendChild(goatScript);
+
 const html = (() => {
   const staging = document.createElement("div");
   const rawSymbol = Symbol("raw");

@@ -115,7 +115,7 @@
     if (!getHits.result) {
       getHits.result = (async () => {
         const res = await fetch(
-          "https://kalabasa.goatcounter.com/counter/TOTAL.json",
+          "https://masteranakiin.goatcounter.com/counter/TOTAL.json",
           { mode: "cors" }
         );
         const data = await res.json();
