@@ -74,18 +74,23 @@
           );
         }
 
-        const strDigits = String(await getHits()).padStart(
-          digitEls.length,
-          "0"
-        );
-
-        loadingAnimationAbortController.abort();
-        for (let i = 0; i < digitEls.length; i++) {
-          this.#animateDigit(
-            digitEls[i],
-            Number(strDigits[i]),
-            200 + 100 * (i + 1)
+        try {
+          const strDigits = String(await getHits()).padStart(
+            digitEls.length,
+            "0"
           );
+
+          loadingAnimationAbortController.abort();
+          for (let i = 0; i < digitEls.length; i++) {
+            this.#animateDigit(
+              digitEls[i],
+              Number(strDigits[i]),
+              200 + 100 * (i + 1)
+            );
+          }
+        } catch (e) {
+          // GoatCounter unreachable — keep initial value
+          loadingAnimationAbortController.abort();
         }
       }
 

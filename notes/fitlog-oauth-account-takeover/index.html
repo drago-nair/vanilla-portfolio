@@ -1,0 +1,145 @@
+<!doctype html>
+<meta charset="utf-8"></meta>
+<meta name="viewport" content="width=device-width, initial-scale=1"></meta>
+<link rel="canonical" href="/notes/fitlog-oauth-account-takeover/">
+<link rel="stylesheet" href="/common.css"></link>
+<script defer="" src="/common.js"></script>
+
+<title>FitLog OAuth Login — How Exported Activities, Custom URL Schemes, and Missing PKCE Enable Full Account Takeover</title>
+
+<site-header></site-header>
+
+<blog-header>
+  <h1>FitLog OAuth Login — How Exported Activities, Custom URL Schemes, and Missing PKCE Enable Full Account Takeover</h1>
+</blog-header>
+
+<blog-post-info>
+  <time datetime="2026-06-25">25 Jun 2026</time>
+  · 7 min read
+</blog-post-info>
+
+<tag-row>
+  <tag-chip title="android"></tag-chip>
+  <tag-chip title="security"></tag-chip>
+  <tag-chip title="oauth"></tag-chip>
+  <tag-chip title="vulnerability"></tag-chip>
+  <tag-chip title="code-review"></tag-chip>
+  <tag-chip title="mobile"></tag-chip>
+</tag-row>
+
+<main appearance="prose">
+
+<p>This case study breaks down the <strong>FitLog OAuth Login</strong> challenge from Code Review Lab. It highlights how a security auditor connects the dots between a public component (<code>exported="true"</code>) and an insecure data pathway to uncover a full account takeover.</p>
+
+<hr>
+
+<h2>Part 1: The Code Review Trail — How It's Tracked Down</h2>
+
+<p>When auditing a mobile app for security vulnerabilities, looking at individual lines of code out of context rarely tells the full story. Instead, attackers and code reviewers <strong>follow a trail of data</strong>. Here is exactly how this bug is tracked down in the FitLog codebase:</p>
+
+<h3>Step 1: The Initial Entry Point — AndroidManifest.xml</h3>
+
+<p>The review begins in the manifest. You notice <code>android:exported="true"</code> on the <code>OAuthCallbackActivity</code>.</p>
+
+<p><strong>Thought process:</strong> Why is this activity exposed to the public?</p>
+
+<p><strong>Finding:</strong> It handles an intent-filter designed to catch browser traffic:</p>
+
+<code-block language="xml">
+<pre><code>&lt;data android:scheme="fitlog" android:host="oauth-callback" /&gt;</code></pre>
+</code-block>
+
+<p>This confirms that the app uses a <strong>Custom URL Scheme</strong> (<code>fitlog://</code>) to receive data back from the web browser during login.</p>
+
+<h3>Step 2: Tracing the Logic — OAuthCallbackActivity.kt</h3>
+
+<p>The reviewer immediately jumps to the code behind that activity to see how it handles incoming data. They check the <code>onCreate</code> or <code>onNewIntent</code> methods.</p>
+
+<p><strong>Finding:</strong> The activity reads the intent, extracts an authorization query parameter (e.g., <code>?code=XYZ123</code>), and prepares to use it.</p>
+
+<h3>Step 3: Checking the Handshake — OAuthManager.kt</h3>
+
+<p>Next, the reviewer investigates how that code is traded for a real login token. They look at <code>OAuthManager.kt</code>.</p>
+
+<p><strong>The trap:</strong> The reviewer looks for <strong>PKCE</strong> (Proof Key for Code Exchange). PKCE requires two unique things: a dynamic <code>code_challenge</code> sent at the start of login, and a secret <code>code_verifier</code> sent at the end.</p>
+
+<box-note>
+  <strong>Finding:</strong> There is <strong>no PKCE logic</strong> in <code>OAuthManager.kt</code>. The token exchange relies entirely on a static, hardcoded <code>client_id</code> and <code>client_secret</code> bundled inside the app's code.
+</box-note>
+
+<hr>
+
+<h2>Part 2: The Vulnerability Explained from the Start</h2>
+
+<p>Now that the components are mapped out, the vulnerability becomes clear. The flaw isn't just one single setting — it is a <strong>chain reaction</strong> of three weak security choices:</p>
+
+<box-note>
+  <strong><code>exported="true"</code> + Custom URL Scheme + No PKCE = Full Account Takeover</strong>
+</box-note>
+
+<h3>1. The Core Flaw: Custom Schemes Are Unregulated</h3>
+
+<p>On a desktop computer, a domain name like <code>google.com</code> can only belong to one owner. On Android, <strong>custom URL schemes have no ownership verification</strong>. Any malicious app downloaded onto a victim's phone can put this exact line in its own manifest:</p>
+
+<code-block language="xml">
+<pre><code>&lt;data android:scheme="fitlog" android:host="oauth-callback" /&gt;</code></pre>
+</code-block>
+
+<p>Android does not block this. It happily lets multiple apps register for the exact same custom scheme.</p>
+
+<h3>2. How the Attack Plays Out</h3>
+
+<prose-table>
+  <table>
+    <thead>
+      <tr>
+        <th>Step</th>
+        <th>What Happens</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1. The victim logs in</strong></td>
+        <td>The user opens the legitimate FitLog app and taps "Log in with OAuth". The phone opens Chrome to let them authenticate.</td>
+      </tr>
+      <tr>
+        <td><strong>2. The server redirects</strong></td>
+        <td>The user logs in successfully. The OAuth server issues an authorization code and sends Chrome to: <code>fitlog://oauth-callback?code=SECRET_CODE_HERE</code></td>
+      </tr>
+      <tr>
+        <td><strong>3. The interception</strong></td>
+        <td>Chrome drops that link back into the Android OS to route it. Because the malicious app registered that exact same scheme, Android gets confused — it may quietly deliver that <code>SECRET_CODE</code> straight to the attacker's app instead of FitLog.</td>
+      </tr>
+      <tr>
+        <td><strong>4. The compromise</strong></td>
+        <td>Because the developers left out PKCE, the malicious app doesn't need to prove it started the login. The attacker extracts the hardcoded <code>client_secret</code> from the FitLog APK, bundles it with the stolen code, sends it to the OAuth token endpoint, and <strong>logs into the victim's account</strong>.</td>
+      </tr>
+    </tbody>
+  </table>
+</prose-table>
+
+<hr>
+
+<h2>Part 3: Why <code>exported="true"</code> Is the Necessary Evil That Opened the Gate</h2>
+
+<p>Your instinct to flag <code>android:exported="true"</code> was entirely correct. It is the catalyst for the bug, but it's important to understand <em>why</em> it was configured that way.</p>
+
+<p><strong>Why the developer did it:</strong> For OAuth to work on mobile apps, the login happens inside an external browser (like Chrome or Firefox). When login finishes, the browser needs permission to wake the app back up and deliver the code. Setting <code>exported="true"</code> gives external apps (like Chrome) permission to launch <code>OAuthCallbackActivity</code>. If it were <code>false</code>, the browser would trigger a security crash, and users could never log in.</p>
+
+<p><strong>Why it creates a vulnerability here:</strong> Setting <code>exported="true"</code> opens an authentication gateway to the entire phone. If you open a door to the public, you must verify who enters. Because the developer paired an exported activity with an unverified custom scheme (<code>fitlog://</code>), they allowed rogue applications to intercept the traffic before it could ever hit the door.</p>
+
+<hr>
+
+<h2>The Fix</h2>
+
+<p>To secure the application, the custom scheme must be swapped out for an <strong>Android App Link</strong> utilizing <code>android:autoVerify="true"</code> over an HTTPS domain (e.g., <code>https://fitlog.com/callback</code>). This forces Android to check a signature file on the server, <strong>cryptographically locking</strong> the link handler to the official FitLog app configuration.</p>
+
+<box-note>
+  <strong>Key takeaway:</strong> <code>exported="true"</code> is often necessary for OAuth flows — but it must be paired with <em>verified</em> link handling (App Links, not custom schemes) and <em>PKCE</em> to prevent code interception. Without both, you've built a door that anyone can walk through.
+</box-note>
+
+</main>
+
+<article-footer></article-footer>
+
+<site-footer></site-footer>

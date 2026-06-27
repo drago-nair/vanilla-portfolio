@@ -1,0 +1,187 @@
+<!doctype html>
+<meta charset="utf-8"></meta>
+<meta name="viewport" content="width=device-width, initial-scale=1"></meta>
+<link rel="canonical" href="/notes/unsafe-reflection-php/">
+<link rel="stylesheet" href="/common.css"></link>
+<script defer="" src="/common.js"></script>
+
+<title>Deconstructing Unsafe Reflection — How Dynamic Instantiation Bypasses Database Validation</title>
+
+<site-header></site-header>
+
+<blog-header>
+  <h1>Deconstructing Unsafe Reflection — How Dynamic Instantiation Bypasses Database Validation</h1>
+</blog-header>
+
+<blog-post-info>
+  <time datetime="2026-06-16">16 Jun 2026</time>
+  · 8 min read
+</blog-post-info>
+
+<tag-row>
+  <tag-chip title="php"></tag-chip>
+  <tag-chip title="security"></tag-chip>
+  <tag-chip title="vulnerability"></tag-chip>
+  <tag-chip title="code-review"></tag-chip>
+</tag-row>
+
+<main appearance="prose">
+
+<h2>Executive Summary</h2>
+
+<p>A common architectural pattern in modular software design is the dynamic loading of plugins or strategies based on runtime parameters. However, when an application uses <strong>user-supplied input to dynamically instantiate a PHP class</strong>, it frequently introduces a severe vulnerability known as <strong>Arbitrary Object Instantiation</strong> — or Unsafe Reflection.</p>
+
+<p>This specific security flaw was analyzed and highlighted by the security research platform <strong>Code Review Lab</strong>. This technical note breaks down exactly how this vulnerability operates in production environments, why typical database validation fails to prevent it, and how an attacker can leverage it to compromise a system.</p>
+
+<hr>
+
+<h2>Part 1: Architecture of the Target Code</h2>
+
+<p>Consider a chatbot application that dynamically routes message processing logic through different modular plugins called <em>"strategies"</em> — for example, <code>EmailStrategy</code>, <code>SmsStrategy</code>, or <code>AutoReplyStrategy</code>. The incoming HTTP request dictates which plugin should be executed.</p>
+
+<p>The application implements this pattern using the following controller logic:</p>
+
+<code-block language="php">
+<pre><code>&lt;?php
+namespace ReplyBot\Controllers;
+
+use ReplyBot\Models\Strategy;
+use ReplyBot\Core\Response;
+
+class StrategyController {
+    
+    public function loadStrategy($request) {
+        $strategyName = $request-&gt;get('strategy');
+        $model = new Strategy();
+        
+        $strategyData = $model-&gt;findByName($strategyName);
+        if (!$strategyData) {
+            return Response::json(['error' =&gt; 'Strategy not found'], 404);
+        }
+        
+        $strategyClass = "ReplyBot\\Strategies\\" . $strategyName;
+        $instance = new $strategyClass();
+        
+        return Response::json([
+            'status' =&gt; 'loaded',
+            'config' =&gt; $instance-&gt;getConfig()
+        ]);
+    }
+}</code></pre>
+</code-block>
+
+<p>Under normal, non-malicious operations, the workflow executes sequentially:</p>
+
+<ol>
+  <li><strong>Input Extraction</strong> — The controller reads the <code>strategy</code> parameter from the request (e.g., <code>?strategy=EmailStrategy</code>).</li>
+  <li><strong>Database Verification</strong> — It queries the database to ensure <code>EmailStrategy</code> exists in the system records.</li>
+  <li><strong>String Concatenation</strong> — It appends the input to a predefined namespace string, creating the fully qualified class name: <code>ReplyBot\Strategies\EmailStrategy</code>.</li>
+  <li><strong>Instantiation</strong> — It calls <code>new $strategyClass()</code>, booting up the targeted plugin.</li>
+  <li><strong>Serialization</strong> — It invokes <code>getConfig()</code> on the new object and returns the data as a JSON payload.</li>
+</ol>
+
+<hr>
+
+<h2>Part 2: The Core Flaw — The Database Trust Fallacy</h2>
+
+<p>A primary point of confusion when auditing this code is the presence of the database verification step:</p>
+
+<code-block language="php">
+<pre><code>$strategyData = $model-&gt;findByName($strategyName);</code></pre>
+</code-block>
+
+<p>It is highly intuitive to look at this line and assume the application is safe. If a user inputs an unexpected or malicious string like <code>?strategy=MaliciousClass</code>, the database query will return empty, the conditional statement will trigger, and the routine will exit early with a <code>404 Strategy not found</code> error.</p>
+
+<box-note>
+  <strong>However, relying strictly on the database configuration table for security introduces a systemic breakdown in <em>Defense in Depth</em>.</strong> This validation can be entirely bypassed or abused via two distinct attack vectors.
+</box-note>
+
+<h3>Vector 1: Persistent Database Poisoning (Secondary Injection)</h3>
+
+<p>In production enterprise applications, the database table containing valid strategy names is rarely static — it is populated and managed via administrative setup dashboards or configuration panels.</p>
+
+<p>If an attacker compromises an administrative account, leverages a separate <strong>SQL Injection (SQLi)</strong> vulnerability, or finds a loosely authorized API endpoint that saves temporary strategy names, they can <strong>inject a malicious payload directly into the database</strong>.</p>
+
+<p>Once the malicious string resides in the table, the database check passes successfully. The application blindly trusts the row metadata, concluding: <em>"An admin stored this string here, so the class name must be safe to execute."</em></p>
+
+<h3>Vector 2: Namespace Escaping &amp; Autoloader Manipulation</h3>
+
+<p>The code forces a rigid folder structure by prepending a namespace prefix:</p>
+
+<code-block language="php">
+<pre><code>$strategyClass = "ReplyBot\\Strategies\\" . $strategyName;</code></pre>
+</code-block>
+
+<p>Under standard operations, the PHP autoloader maps this namespace directly to the <code>src/Strategies/</code> directory. However, depending on the PHP version deployed and how the Composer autoloader is configured, attackers can leverage specific class-pathing characters or directory traversal techniques — such as <strong>null bytes</strong> (<code>%00</code>) in older environments, or supplying fully qualified fallback classes that the autoloader resolves globally.</p>
+
+<p>If an attacker can map an entry in the database that overrides or escapes the local folder bounds, the <code>new</code> keyword will look <strong>completely outside the safe folder structure</strong>.</p>
+
+<hr>
+
+<h2>Part 3: The Exploit Mechanics — Arbitrary Object Instantiation</h2>
+
+<p>The fundamental security vulnerability is the raw execution of the variable inside the <code>new</code> operator:</p>
+
+<code-block language="php">
+<pre><code>$instance = new $strategyClass();</code></pre>
+</code-block>
+
+<p>In PHP, the absolute moment an object is instantiated via the <code>new</code> keyword, its internal magic method <code>__construct()</code> — the constructor — is <strong>automatically and immediately executed</strong>. The application never verifies <em>what type</em> of class it is spinning up; it simply assumes that if the class exists, it is a valid chatbot strategy.</p>
+
+<p>An attacker exploiting this vulnerability will deliberately input the class name of a dangerous, built-in PHP class or a standard core component available through framework dependencies. Because the constructor fires instantly upon instantiation, the attacker achieves <strong>immediate execution of unauthorized code</strong>.</p>
+
+<h3>Real-World Gadget Examples</h3>
+
+<prose-table>
+  <table>
+    <thead>
+      <tr>
+        <th>Target Component</th>
+        <th>Attacker Payload</th>
+        <th>Constructor Payload Impact</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>SimpleXMLElement</code></td>
+        <td>Pre-seeded XML file path or external URL structure</td>
+        <td><strong>XML External Entity (XXE)</strong> — the internal XML parser attempts to resolve external entities inside the constructor, allowing the attacker to read local system configuration files (e.g., <code>/etc/passwd</code>) or perform Server-Side Request Forgery (SSRF).</td>
+      </tr>
+      <tr>
+        <td><code>Monolog\Handler\SyslogUdpHandler</code></td>
+        <td>Malicious IP address and port parameters</td>
+        <td><strong>Network Port Scanning</strong> — the constructor instantly opens a live network UDP socket connection to the targeted host, allowing attackers to scan internal infrastructure firewalled from the outside internet.</td>
+      </tr>
+      <tr>
+        <td>Custom Application Classes</td>
+        <td>Utilities meant for administrative cleanups or system syncs</td>
+        <td><strong>Remote Code Execution (RCE)</strong> — if an application contains utility classes that drop database tables, write files to disk, or execute shell commands inside their setup code, triggering them unexpectedly allows full host takeover.</td>
+      </tr>
+    </tbody>
+  </table>
+</prose-table>
+
+<hr>
+
+<h2>Summary</h2>
+
+<box-note>
+  <strong>The core architectural takeaway from this vulnerability report is clear:</strong> Data storage layers should never dictate application execution flow without type verification. Checking if a string exists inside a database verifies its <em>existence</em>, but it does not verify its <em>intent</em> or its <em>safety</em>.
+</box-note>
+
+<p>To build resilient software, applications must <strong>explicitly validate</strong> that dynamically resolved variables conform to strict type contracts, interfaces, or whitelists <em>before</em> handing them over to core runtime engine triggers.</p>
+
+<p><strong>Defense checklist:</strong></p>
+
+<ul>
+  <li>Maintain a hardcoded whitelist of allowed class names — never rely solely on the database</li>
+  <li>Enforce interface contracts — verify that the resolved class <code>implements</code> a known safe interface before instantiation</li>
+  <li>Avoid dynamic <code>new</code> with user-controlled input entirely; prefer factory methods with explicit mapping</li>
+  <li>Configure the autoloader to restrict class resolution to specific directories</li>
+</ul>
+
+</main>
+
+<article-footer></article-footer>
+
+<site-footer></site-footer>

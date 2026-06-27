@@ -1,0 +1,86 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="canonical" href="/wares/netpulse/">
+<link rel="stylesheet" href="/common.css">
+<script defer src="/common.js"></script>
+
+<title>NetPulse — Network Intrusion Detection System</title>
+
+<site-header></site-header>
+
+<blog-header>
+  <h1>NetPulse</h1>
+  <span class="sub">Real-time Network Intrusion Detection System</span>
+</blog-header>
+
+<blog-post-info>
+  <time>2025</time>
+  · Python · Scapy · Flask · SQLite
+</blog-post-info>
+
+<main appearance="prose">
+
+<h2>What is NetPulse?</h2>
+
+<p>
+  NetPulse is a <strong>real-time Network Intrusion Detection System</strong> built from the ground up in Python.
+  It sniffs live network traffic via Scapy and runs a modular detector pipeline
+  to flag malicious activity — no cloud dependencies, no paid APIs, just raw packet inspection.
+</p>
+
+<h2>Architecture</h2>
+
+<p>
+  NetPulse follows a <strong>pipeline architecture</strong> where raw packets flow through
+  discrete detection stages. Each detector operates independently and raises
+  severity-ranked alerts that feed into a central reporting engine.
+</p>
+
+<p>
+  <strong>Packet Capture</strong> → <strong>Feature Extraction</strong> → <strong>Detection Pipeline</strong> → <strong>Alert Engine</strong> → <strong>Dashboard</strong>
+</p>
+
+<h2>Detection Modules</h2>
+
+<h3>Port Scan Detection</h3>
+<p>
+  Tracks connection attempts across port ranges using SYN packet analysis.
+  Flags horizontal scans (one attacker, many ports) and vertical scans
+  (one port, many targets) with configurable thresholds.
+</p>
+
+<h3>SSH Brute-Force Detection</h3>
+<p>
+  Monitors SSH authentication failure rates per source IP. Uses a sliding
+  window counter — if failed attempts exceed the threshold within the window,
+  an alert fires with the offending IP and attempt count.
+</p>
+
+<h3>ARP Spoofing Detection</h3>
+<p>
+  Watches for ARP reply anomalies — specifically, IP-to-MAC mappings that
+  suddenly change mid-session. A classic sign of an attacker positioning
+  themselves as a man-in-the-middle.
+</p>
+
+<h3>DNS Tunneling Detection</h3>
+<p>
+  Applies <strong>entropy analysis</strong> to DNS query payloads. Legitimate DNS
+  queries have low entropy (predictable domain names). Tunneling tools
+  pack encrypted data into DNS — the entropy spike is the signal.
+</p>
+
+<h2>Dashboard</h2>
+<p>
+  A lightweight Flask web dashboard provides live monitoring:
+  real-time alert feed, severity breakdowns, per-detector statistics,
+  and a timeline of recent events. Designed for at-a-glance situational
+  awareness during active monitoring sessions.
+</p>
+
+<p>
+  <a href="https://github.com/drago-nair/netpulse" target="_blank">View on GitHub →</a>
+</p>
+
+</main>

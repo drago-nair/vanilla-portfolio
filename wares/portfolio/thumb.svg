@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" fill="none">
+  <rect width="800" height="500" fill="#080e0d"/>
+  <!-- Grid lines to suggest bento layout -->
+  <rect x="30" y="30" width="350" height="200" rx="8" fill="#131c1a" stroke="#e11d48" stroke-width="1.5"/>
+  <rect x="400" y="30" width="370" height="200" rx="8" fill="#131c1a" stroke="#22c55e" stroke-width="1.5"/>
+  <rect x="30" y="250" width="230" height="220" rx="8" fill="#131c1a" stroke="#22c55e" stroke-width="1.5"/>
+  <rect x="280" y="250" width="230" height="220" rx="8" fill="#131c1a" stroke="#f59e0b" stroke-width="1.5"/>
+  <rect x="530" y="250" width="240" height="220" rx="8" fill="#131c1a" stroke="#e11d48" stroke-width="1.5"/>
+  <!-- Accent dot -->
+  <circle cx="400" cy="250" r="6" fill="#e11d48"/>
+  <!-- Text -->
+  <text x="400" y="480" text-anchor="middle" fill="#e11d48" font-family="monospace" font-size="18" font-weight="bold">Blood Rose · Vanilla HTML/CSS/JS</text>
+</svg>

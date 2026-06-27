@@ -3,6 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="webmention" href="https://webmention.io/drago-nair.github.io/webmention">
 <link rel="canonical" href="/">
+<link rel="alternate" type="application/rss+xml" title="Security Research Notes" href="/rss.xml">
 <link rel="me" href="https://github.com/drago-nair">
 <link rel="stylesheet" href="/common.css">
 <script defer src="/common.js"></script>
@@ -581,18 +582,122 @@
   <section>
     <img class="pixelated lg-icon" src="/icons/glasses.png" alt="" loading="lazy" width="16" height="16" />
     <h2>Latest notes</h2>
+    <style>
+      .note-pop {
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        border-left: solid 3px var(--clr0, #e11d48);
+        cursor: pointer;
+      }
+      .note-pop:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(225,29,72,0.15);
+        border-color: var(--clr0, #e11d48);
+      }
+      .note-pop strong {
+        display: block;
+        font-size: 0.95em;
+        line-height: 1.3;
+        margin-bottom: 8px;
+        color: var(--text-clr);
+      }
+      .note-pop tag-chip {
+        margin-right: 4px;
+        margin-bottom: 4px;
+      }
+      .note-pop time {
+        display: block;
+        margin-top: 8px;
+        font-size: 0.8em;
+        font-weight: normal;
+        font-style: italic;
+        color: var(--text2-clr);
+        text-align: right;
+      }
+      #latest-notes a {
+        text-decoration: none;
+        color: inherit;
+      }
+      /* Bento + streak cards */
+      .bento-section card-box {
+        border-color: var(--clr0-dark);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      }
+      .bento-section card-box:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(34,197,94,0.12);
+        border-color: var(--clr0);
+      }
+      /* Project feature cards */
+      feature-card {
+        border: solid 1px var(--clr0-dark);
+        border-radius: var(--card-border-radius);
+        padding: 12px 0 0;
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      }
+      feature-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(34,197,94,0.12);
+        border-color: var(--clr0);
+      }
+      feature-card img,
+      feature-card video {
+        border-radius: calc(var(--card-border-radius) - 1px) calc(var(--card-border-radius) - 1px) 0 0;
+      }
+    </style>
     <notes-list id="latest-notes">
-      <ul>
-        <li>
-          <a href="/notes/setting-up-hermes-agent/">
-            <strong>Setting up Hermes Agent under Docker with DeepSeek</strong>
-            <tag-chip title="ai"></tag-chip>
-            <tag-chip title="docker"></tag-chip>
-            <tag-chip title="howto"></tag-chip>
-            <time datetime="2026-06-06">06 Jun 2026</time>
-          </a>
-        </li>
-      </ul>
+      <fixed-grid cols="2" gap="2">
+        <a href="/notes/token-burn-bug-parameter-flipping/">
+          <card-box class="note-pop">
+            <strong>Deconstructing the Token Burn Bug — Parameter Flipping</strong>
+            <tag-chip title="solidity"></tag-chip>
+            <tag-chip title="smart-contract"></tag-chip>
+            <tag-chip title="security"></tag-chip>
+            <tag-chip title="vulnerability"></tag-chip>
+            <time datetime="2026-06-26">26 Jun 2026</time>
+          </card-box>
+        </a>
+        <a href="/notes/ffmpeg-critical-attack-surface/">
+          <card-box class="note-pop">
+            <strong>Why FFmpeg Remains a Critical Attack Surface</strong>
+            <tag-chip title="security"></tag-chip>
+            <tag-chip title="ffmpeg"></tag-chip>
+            <tag-chip title="appsec"></tag-chip>
+            <tag-chip title="vulnerability"></tag-chip>
+            <time datetime="2026-06-26">26 Jun 2026</time>
+          </card-box>
+        </a>
+        <a href="/notes/fitlog-oauth-account-takeover/">
+          <card-box class="note-pop">
+            <strong>FitLog OAuth Login — Account Takeover</strong>
+            <tag-chip title="android"></tag-chip>
+            <tag-chip title="security"></tag-chip>
+            <tag-chip title="oauth"></tag-chip>
+            <tag-chip title="mobile"></tag-chip>
+            <time datetime="2026-06-25">25 Jun 2026</time>
+          </card-box>
+        </a>
+        <a href="/notes/secure-rate-limiting-x-forwarded-for/">
+          <card-box class="note-pop">
+            <strong>Mastering Secure Rate Limiting — Why Your IP Parsing Logic Is Likely Vulnerable</strong>
+            <tag-chip title="security"></tag-chip>
+            <tag-chip title="nodejs"></tag-chip>
+            <tag-chip title="express"></tag-chip>
+            <tag-chip title="redis"></tag-chip>
+            <time datetime="2026-06-17">17 Jun 2026</time>
+          </card-box>
+        </a>
+        <a href="/notes/unsafe-reflection-php/">
+          <card-box class="note-pop">
+            <strong>Deconstructing Unsafe Reflection — Dynamic Instantiation Bypasses DB Validation</strong>
+            <tag-chip title="php"></tag-chip>
+            <tag-chip title="security"></tag-chip>
+            <tag-chip title="vulnerability"></tag-chip>
+            <tag-chip title="code-review"></tag-chip>
+            <time datetime="2026-06-16">16 Jun 2026</time>
+          </card-box>
+        </a>
+      </fixed-grid>
     </notes-list>
     <p class="center-text">
       <a class="bold" href="/notes/">
@@ -606,7 +711,7 @@
     <fixed-grid>
       <feature-card no-anim>
         <a href="https://github.com/drago-nair/netpulse" target="_blank">
-          <img src="/wares/netpulse/thumb.png" loading="lazy" width="800" height="500" />
+          <img src="/wares/netpulse/thumb.svg" loading="lazy" width="800" height="500" />
           <hgroup>
             <h1>NetPulse</h1>
             <em>2025 · Network Intrusion Detection</em>
@@ -698,7 +803,7 @@
   <a href="/notes/">
     <card-box>
       <img class="pixelated lg-icon" src="/icons/glasses.png" alt="" loading="lazy" width="16" height="16" />
-      <span><span data-rewrite="noteCount">1</span> note</span>
+      <span><span data-rewrite="noteCount">5</span> notes</span>
     </card-box>
   </a>
   <a href="/wares/">
@@ -724,7 +829,7 @@
     <card-box class="bento-tall">
       <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
         <span style="font-size:2.5em">🏃</span>
-        <span style="font-size:2em;font-weight:bold;font-style:normal">2</span>
+        <span style="font-size:2em;font-weight:bold;font-style:normal">5</span>
         <span style="font-style:italic">week run streak</span>
       </div>
     </card-box>
@@ -848,4 +953,40 @@
       }
     };
   });
+</script>
+
+<script>
+  // Auto-update note & project counters from source data
+  (() => {
+    // Notes count: fetch JSON index
+    fetch("/notes/index.generated.combined.json")
+      .then(r => r.json())
+      .then(notes => {
+        const el = document.querySelector('[data-rewrite="noteCount"]');
+        if (el) {
+          const count = Array.isArray(notes) ? notes.length : 0;
+          el.textContent = count;
+          const parent = el.parentElement;
+          if (parent) {
+            parent.textContent = count + " note" + (count !== 1 ? "s" : "");
+          }
+        }
+      })
+      .catch(() => {});
+
+    // Projects count: count feature-card elements that aren't placeholders
+    const cards = document.querySelectorAll("feature-card:not([no-anim])");
+    const el = document.querySelector('[data-rewrite="wareCount"]');
+    if (el) {
+      const realCards = [...cards].filter(c =>
+        !c.querySelector("h1")?.textContent.includes("Coming Soon")
+      );
+      const count = realCards.length || 1;
+      el.textContent = count;
+      const parent = el.parentElement;
+      if (parent) {
+        parent.textContent = count + " project" + (count !== 1 ? "s" : "");
+      }
+    }
+  })();
 </script>

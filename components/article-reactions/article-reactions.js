@@ -347,7 +347,7 @@ function eventVars(reactionType) {
 }
 
 export function eventName(pagePath, reactionType) {
-  const url = new URL(pagePath, "https://leanrada.com");
+  const url = new URL(pagePath, "https://drago-nair.github.io");
   const id = url.pathname;
   return `reaction-${reactionType}-${id}`;
 }

@@ -1,0 +1,153 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="canonical" href="/notes/token-burn-bug-parameter-flipping/">
+<link rel="stylesheet" href="/common.css">
+<script defer src="/common.js"></script>
+
+<title>Deconstructing the Token Burn Bug — How Parameter Flipping Enables Unauthorized Asset Destruction</title>
+
+<site-header></site-header>
+
+<blog-header>
+  <h1>Deconstructing the Token Burn Bug</h1>
+</blog-header>
+
+<blog-post-info>
+  <time datetime="2026-06-26">26 Jun 2026</time>
+  · 5 min read
+</blog-post-info>
+
+<tag-row>
+  <tag-chip title="solidity"></tag-chip>
+  <tag-chip title="smart-contract"></tag-chip>
+  <tag-chip title="security"></tag-chip>
+  <tag-chip title="vulnerability"></tag-chip>
+  <tag-chip title="code-review"></tag-chip>
+</tag-row>
+
+<main appearance="prose">
+
+<h2>Executive Summary</h2>
+
+<p>
+  In smart contract security, a single typo can separate a secure protocol from
+  total economic collapse. The <strong>Token Burn Bug</strong> from Code Reviewlab
+  demonstrates one of the most devastating yet deceptively simple logic flaws in
+  Solidity: <strong>parameter flipping within authorization mappings</strong>.
+  The failure is not complex math or an EVM edge-case — it's a human-error flaw
+  where variables were transposed during a critical access control check.
+</p>
+
+<h2>Core Concept: Owner vs. Spender</h2>
+
+<p>
+  Standard ERC-20 tokens track delegated spending limits through a nested mapping:
+</p>
+
+<pre><code>mapping(address => mapping(address => uint256)) private _allowances;
+
+function allowance(address owner, address spender) public view returns (uint256)</code></pre>
+
+<ul>
+  <li><strong>1st Parameter (owner):</strong> The Authorizer — holds the tokens and delegates spending privileges</li>
+  <li><strong>2nd Parameter (spender):</strong> The Delegate — authorized to withdraw up to the delegated limit</li>
+</ul>
+
+<h2>The Flawed Code</h2>
+
+<pre><code>function burnFrom(address from, uint256 amount) external returns (bool) {
+    address spender = msg.sender;
+    // ❌ VULNERABILITY: Parameter positions are reversed!
+    uint256 currentAllowance = allowance(spender, from);
+    require(currentAllowance >= amount, "Burn amount exceeds allowance");
+    _approve(from, spender, currentAllowance - amount);
+    _burn(from, amount); // 💥 Destroys tokens from the targeted address
+    return true;
+}</code></pre>
+
+<p>
+  The critical line is <code>allowance(spender, from)</code>. Because the ERC-20
+  standard treats the <strong>first argument as the owner</strong>, the EVM
+  interprets <code>spender</code> (the attacker) as the token owner and
+  <code>from</code> (the victim) as the delegate.
+</p>
+
+<p>
+  Instead of asking <em>"Did the victim authorize the attacker to burn their tokens?"</em>,
+  the logic asks <em>"Did the attacker authorize the victim to spend the attacker's tokens?"</em> —
+  a question the attacker controls completely.
+</p>
+
+<h2>Step-by-Step Attack Vector</h2>
+
+<h3>1. Manipulating the Ledger State</h3>
+<p>
+  Eve (attacker) targets Alice (victim), who holds a high GG token balance.
+  Eve calls the standard <code>approve</code> function:
+</p>
+<pre><code>token.approve(Alice, 1000000);</code></pre>
+<p>
+  This records <code>_allowances[Eve][Alice] = 1000000</code>. Eve has injected
+  a massive allowance ceiling into the ledger — on her own terms.
+</p>
+
+<h3>2. Bypassing the Authorization Gate</h3>
+<p>
+  Eve calls <code>burnFrom(Alice, 500)</code>. Within this execution frame,
+  <code>spender</code> resolves to Eve and <code>from</code> resolves to Alice:
+</p>
+<pre><code>uint256 currentAllowance = allowance(Eve, Alice); // Resolves to 1,000,000
+require(1000000 >= 500); // 🟢 Satisfied — Eve authorized this!</code></pre>
+
+<h3>3. Targeted Asset Eradication</h3>
+<p>
+  The internal <code>_burn</code> function bypasses allowance checks entirely,
+  altering the balance mapping directly. 500 real tokens are permanently
+  destroyed from Alice's balance — while Eve's balance remains untouched.
+  The allowance drops to 999,500, leaving Eve ample headroom to repeat until
+  Alice's balance hits zero.
+</p>
+
+<h2>Ledger State During Exploit</h2>
+
+<p>
+  <strong>Allowance Ledger</strong> (<code>_allowances[Eve][Alice]</code>):
+  1,000,000 → 999,500. Permission ceiling drops; no assets altered.
+</p>
+<p>
+  <strong>Alice's Wallet</strong> (<code>_balances[Alice]</code>):
+  5,000 GG → 4,500 GG. 500 legitimate tokens permanently destroyed.
+</p>
+<p>
+  <strong>Eve's Wallet</strong> (<code>_balances[Eve]</code>):
+  0 GG → 0 GG. Attacker remains entirely unaffected.
+</p>
+
+<h2>Remediation</h2>
+
+<p>
+  The fix is a one-line parameter swap — aligning with the ERC-20 standard's
+  structural ordering:
+</p>
+
+<pre><code>// FIXED: "from" is the asset owner; "spender" is the caller.
+uint256 currentAllowance = allowance(from, spender);</code></pre>
+
+<p>
+  Now the check correctly asks: <em>"Did Alice (from) authorize Eve (spender)?"</em>
+  — which Eve cannot fabricate.
+</p>
+
+<h2>Security Takeaway</h2>
+
+<p>
+  The Token Burn Bug illustrates that <strong>code readability and strict
+  adherence to architectural standards</strong> are vital to smart contract
+  safety. When extending or overriding standard token functions, ensure the
+  true Authorizer occupies the primary parameter position. A single transposition
+  in an authorization mapping is not a minor style issue — it is an economic
+  vulnerability with direct financial consequences.
+</p>
+
+</main>

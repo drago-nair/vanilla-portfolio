@@ -1,0 +1,214 @@
+<!doctype html>
+<meta charset="utf-8"></meta>
+<meta name="viewport" content="width=device-width, initial-scale=1"></meta>
+<link rel="canonical" href="/notes/regression-and-information-metrics/">
+<link rel="stylesheet" href="/common.css"></link>
+<script defer="" src="/common.js"></script>
+
+<title>Regression & Information Metrics — Deep-Dive Comparisons</title>
+
+<site-header></site-header>
+
+<blog-header>
+  <h1>Regression &amp; Information Metrics — Deep-Dive Comparisons</h1>
+</blog-header>
+
+<blog-post-info>
+  <time datetime="2026-06-12">12 Jun 2026</time>
+  · 5 min read
+</blog-post-info>
+
+<tag-row>
+  <tag-chip title="machine-learning"></tag-chip>
+  <tag-chip title="statistics"></tag-chip>
+  <tag-chip title="data-science"></tag-chip>
+</tag-row>
+
+<main appearance="prose">
+
+<h2>⚖️ Section 1: Linear Regression vs. Logistic Regression</h2>
+
+<p>The fundamental divide in supervised machine learning comes down to one question: are you predicting a <strong>number</strong>, or sorting into a <strong>bucket</strong>?</p>
+
+<prose-table>
+  <table>
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th>Linear Regression 📏</th>
+        <th>Logistic Regression 🎢</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Primary Task</strong></td>
+        <td><strong>Regression</strong> — predicting a continuous, measured numeric value</td>
+        <td><strong>Classification</strong> — predicting a discrete, categorical label</td>
+      </tr>
+      <tr>
+        <td><strong>Output Range</strong></td>
+        <td>Infinite — any number from −∞ to +∞</td>
+        <td>Strict probability — a decimal between 0 and 1</td>
+      </tr>
+      <tr>
+        <td><strong>Line / Shape</strong></td>
+        <td>A rigid, straight line (flat hyperplane in higher dimensions)</td>
+        <td>A flexible, S-shaped curve (created by the Sigmoid function)</td>
+      </tr>
+      <tr>
+        <td><strong>Underlying Math</strong></td>
+        <td><strong>Ordinary Least Squares (OLS)</strong> — minimises the squared distance to a straight line</td>
+        <td>The <strong>Sigmoid function</strong> compresses a straight line's values into a 0-to-1 boundary</td>
+      </tr>
+      <tr>
+        <td><strong>Decision Boundary</strong></td>
+        <td>None — the line itself <em>is</em> the exact prediction</td>
+        <td>Yes — uses a threshold (e.g. 0.50) to create a definitive dividing fence</td>
+      </tr>
+    </tbody>
+  </table>
+</prose-table>
+
+<h3>💡 Core Intuition — Student Tracking</h3>
+
+<box-note>
+  <strong>Linear Regression:</strong> You want to predict a student's exact exam score. The model outputs a number: <strong>84.3</strong>.<br><br>
+  <strong>Logistic Regression:</strong> You want to predict whether the student will Pass (1) or Fail (0). The model outputs a probability: <strong>0.84</strong> — an 84% chance of passing. Since 0.84 &gt; your 0.50 threshold, the student is sorted into the <strong>"Pass"</strong> bucket.
+</box-note>
+
+<hr>
+
+<h2>🎲 Section 2: Gini Impurity vs. Entropy</h2>
+
+<p>When building Decision Trees, both Gini Impurity and Entropy serve as the tree's internal "sensors" — answering the question: <em>"How mixed up is this group of data?"</em> They behave almost identically on a graph, but they approach chaos from two distinct mathematical angles.</p>
+
+<prose-table>
+  <table>
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th>Gini Impurity 🎲</th>
+        <th>Entropy 😲</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Core Concept</strong></td>
+        <td><strong>The Guessing Game</strong> — probability of misclassifying an item if you guessed completely at random</td>
+        <td><strong>The Surprise Factor</strong> — the amount of absolute disorder, chaos, or uncertainty in the group</td>
+      </tr>
+      <tr>
+        <td><strong>Perfect Purity</strong></td>
+        <td><code>0.0</code> — zero chance of a guessing mistake</td>
+        <td><code>0.0</code> — zero surprise; you know exactly what you'll pull out</td>
+      </tr>
+      <tr>
+        <td><strong>Maximum Chaos</strong><br>(50/50 split)</td>
+        <td><code>0.5</code> — a 50% chance of guessing wrong</td>
+        <td><code>1.0</code> — complete uncertainty; a coin toss</td>
+      </tr>
+      <tr>
+        <td><strong>Formula Shape</strong></td>
+        <td>1 − Σ <var>p<sub>i</sub></var>² <br><small>(basic squares)</small></td>
+        <td>−Σ <var>p<sub>i</sub></var> log₂ <var>p<sub>i</sub></var> <br><small>(logarithmic)</small></td>
+      </tr>
+      <tr>
+        <td><strong>Computational Speed</strong></td>
+        <td>⚡ <strong>Fast</strong> — squares are cheap to compute</td>
+        <td>🐢 <strong>Slower</strong> — logarithms require more processing power</td>
+      </tr>
+      <tr>
+        <td><strong>Typical Usage</strong></td>
+        <td>Default metric in Python's <code>scikit-learn</code> (speed preference)</td>
+        <td>Traditional algorithms (ID3), advanced information theory</td>
+      </tr>
+    </tbody>
+  </table>
+</prose-table>
+
+<h3>💡 Core Intuition — The Marble Buckets</h3>
+
+<p>Imagine a bucket with <strong>50 Red</strong> and <strong>50 Blue</strong> marbles — maximum messiness.</p>
+
+<prose-table>
+  <table>
+    <thead>
+      <tr>
+        <th>Lens</th>
+        <th>What It Says</th>
+        <th>Score</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Gini</strong></td>
+        <td>Pull one marble, put it back, blindly guess the colour of the next — you'll be wrong <strong>50%</strong> of the time.</td>
+        <td><code>0.5</code></td>
+      </tr>
+      <tr>
+        <td><strong>Entropy</strong></td>
+        <td>Reach in for a marble — you have <strong>absolutely no idea</strong> which colour you'll get. Total coin toss.</td>
+        <td><code>1.0</code></td>
+      </tr>
+    </tbody>
+  </table>
+</prose-table>
+
+<p>Now fill the bucket with <strong>100 Red, 0 Blue</strong>. Both metrics instantly drop to <code>0.0</code> — zero guessing error, zero surprise. Pure order.</p>
+
+<hr>
+
+<h2>🔑 Quick-Reference Cheat Sheet</h2>
+
+<prose-table>
+  <table>
+    <thead>
+      <tr>
+        <th>Question</th>
+        <th>Answer</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Predicting a continuous number?</td>
+        <td>Linear Regression</td>
+      </tr>
+      <tr>
+        <td>Predicting yes/no, pass/fail, cat/dog?</td>
+        <td>Logistic Regression</td>
+      </tr>
+      <tr>
+        <td>Fastest split metric for decision trees?</td>
+        <td>Gini Impurity</td>
+      </tr>
+      <tr>
+        <td>Information-theoretic purity metric?</td>
+        <td>Entropy</td>
+      </tr>
+      <tr>
+        <td>Gini max value (2-class)?</td>
+        <td><code>0.5</code></td>
+      </tr>
+      <tr>
+        <td>Entropy max value (2-class)?</td>
+        <td><code>1.0</code></td>
+      </tr>
+      <tr>
+        <td>Both metrics = 0.0 when?</td>
+        <td>The group is 100% one class</td>
+      </tr>
+    </tbody>
+  </table>
+</prose-table>
+
+<hr>
+
+<box-note>
+  <strong>Takeaway:</strong> Linear Regression draws a line through your data; Logistic Regression draws a line through your data and <em>squashes</em> it into a probability. Gini asks <em>"how often would I guess wrong?"</em> — Entropy asks <em>"how surprised would I be?"</em> Same destination, different journey.
+</box-note>
+
+</main>
+
+<article-footer></article-footer>
+
+<site-footer></site-footer>

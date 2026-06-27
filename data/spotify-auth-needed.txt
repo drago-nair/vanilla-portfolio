@@ -1,0 +1,9 @@
+Spotify OAuth is logged out — refresh token revoked. The now-playing tile cannot update.
+
+To fix:
+  1. Run: hermes auth spotify
+  2. Follow the browser OAuth flow
+  3. The cron job will resume on its next cycle
+
+Current state saved to /opt/data/site/data/now-playing.json (empty, isPlayingNow=false).
+Last attempted: 2026-06-09 (unix 1781004667)

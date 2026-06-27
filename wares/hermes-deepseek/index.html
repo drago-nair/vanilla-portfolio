@@ -1,0 +1,84 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="canonical" href="/wares/hermes-deepseek/">
+<link rel="stylesheet" href="/common.css">
+<script defer src="/common.js"></script>
+
+<title>Hermes Agent + DeepSeek — Docker Setup</title>
+
+<site-header></site-header>
+
+<blog-header>
+  <h1>Hermes Agent + DeepSeek</h1>
+  <span class="sub">Autonomous AI agent, containerized</span>
+</blog-header>
+
+<blog-post-info>
+  <time>2026</time>
+  · Docker · DeepSeek · Hermes Agent
+</blog-post-info>
+
+<main appearance="prose">
+
+<h2>What is Hermes Agent?</h2>
+
+<p>
+  Hermes Agent is an <strong>open-source AI agent framework</strong> from
+  Nous Research. Unlike a chat interface, it's an <em>operative</em> —
+  the LLM gets a shell, a filesystem, a browser, and the autonomy to
+  use them. It can read and write files, run terminal commands, browse
+  the web, manage cron jobs, and delegate work to sub-agents — all
+  orchestrated through a single prompt loop.
+</p>
+
+<h2>The Stack</h2>
+
+<p>
+  This setup pairs <strong>Hermes Agent</strong> with
+  <strong>DeepSeek V4 Pro</strong> as the reasoning backend, all running
+  inside a Docker container. The container bundles:
+</p>
+
+<ul>
+  <li><strong>Hermes Agent</strong> — the agent runtime and CLI</li>
+  <li><strong>DeepSeek API</strong> — the model provider for tool-use and reasoning</li>
+  <li><strong>s6-overlay</strong> — process supervision inside the container</li>
+  <li><strong>Custom skills</strong> — reusable workflows for common tasks: GitHub PRs, code review, deployment, site maintenance</li>
+</ul>
+
+<h2>Capabilities</h2>
+
+<p>
+  Once running, Hermes handles the full dev workflow autonomously:
+</p>
+
+<ul>
+  <li><strong>File operations</strong> — read, write, patch, search across the codebase</li>
+  <li><strong>Terminal access</strong> — builds, installs, git operations, server management</li>
+  <li><strong>Browser automation</strong> — web scraping, screenshot capture, form interaction</li>
+  <li><strong>Cron scheduling</strong> — recurring tasks like data collection, health checks, feed updates</li>
+  <li><strong>Sub-agent delegation</strong> — spawns isolated workers for parallel workstreams</li>
+  <li><strong>Platform integration</strong> — Telegram messaging, GitHub PR workflow, site deployment</li>
+</ul>
+
+<h2>Why DeepSeek?</h2>
+
+<p>
+  DeepSeek V4 Pro offers strong tool-use performance at a fraction of the
+  cost of comparable models. For an agent that makes dozens of API calls
+  per session, cost-per-token matters. DeepSeek delivers reliable
+  multi-step reasoning without burning through credits.
+</p>
+
+<h2>In Practice</h2>
+
+<p>
+  This very portfolio — the notes, the RSS feed, the project pages, the
+  bento grid tweaks — was built, edited, and deployed by Hermes Agent
+  running under this exact Docker setup. The agent reads the codebase,
+  proposes changes, applies patches, restarts servers, and verifies the
+  output. The human reviews. The cycle repeats.
+</p>
+
+</main>
