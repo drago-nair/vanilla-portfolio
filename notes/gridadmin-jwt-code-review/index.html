@@ -1,0 +1,117 @@
+<!doctype html>
+<meta charset="utf-8"></meta>
+<meta name="viewport" content="width=device-width, initial-scale=1"></meta>
+<link rel="canonical" href="/notes/gridadmin-jwt-code-review/">
+<link rel="stylesheet" href="/common.css"></link>
+<script defer="" src="/common.js"></script>
+
+<title>GridAdmin JWT — Algorithm Confusion and How HS256 Hijacks RS256 Verification</title>
+
+<site-header></site-header>
+
+<blog-header>
+  <h1>GridAdmin JWT — Algorithm Confusion and How HS256 Hijacks RS256 Verification</h1>
+</blog-header>
+
+<blog-post-info>
+  <time datetime="2026-06-28">28 Jun 2026</time>
+  · 4 min read
+</blog-post-info>
+
+<tag-row>
+  <tag-chip title="jwt"></tag-chip>
+  <tag-chip title="security"></tag-chip>
+  <tag-chip title="code-review"></tag-chip>
+  <tag-chip title="vulnerability"></tag-chip>
+  <tag-chip title="authentication"></tag-chip>
+  <tag-chip title="web"></tag-chip>
+</tag-row>
+
+<main appearance="prose">
+
+<p>This case study breaks down the <strong>GridAdmin JWT</strong> challenge from <a href="https://www.codereviewlab.com/challenges/cmqrb5jjv00162ngi9xjw1q7y" target="_blank" rel="noopener">Code Review Lab</a>. It exposes a classic <strong>JWT Algorithm Confusion</strong> vulnerability — where a misconfigured verification allow-list lets an attacker forge admin tokens using nothing but a public key.</p>
+
+<hr>
+
+<h2>The Vulnerability: JWT Algorithm Confusion</h2>
+
+<p>The provided code contains a critical authentication bypass due to JWT Algorithm Confusion. The application exposes an allow-list configured to accept both asymmetric (<code>RS256</code>) and symmetric (<code>HS256</code>) algorithms within the same verification execution path:</p>
+
+<code-block language="python">
+<pre><code>VERIFY_ALGS = ["RS256", "HS256"]</code></pre>
+</code-block>
+
+<h2>How It Fails</h2>
+
+<h3>1. Asymmetric vs. Symmetric</h3>
+
+<p>The system retrieves an RSA public key via <code>public_key_pem()</code> to verify <code>RS256</code> tokens minted by the corporate SSO. Public keys are inherently public and non-secret by design.</p>
+
+<h3>2. The Key Confusion</h3>
+
+<p>When an attacker crafts a malicious token with the header <code>{"alg": "HS256"}</code>, the underlying <code>jwt.decode</code> library switches to symmetric verification mode.</p>
+
+<h3>3. The Exploit Mechanism</h3>
+
+<p>Because <code>HS256</code> is in the allowed list, the library treats the provided key — which contains the public RSA key bytes — as a raw HMAC symmetric shared secret. An attacker can sign a forged token (e.g., specifying <code>{"role": "admin"}</code>) using the freely available public key bytes as the HMAC secret, completely bypassing authentication.</p>
+
+<box-note>
+  <strong>TL;DR:</strong> When both RS256 and HS256 are allowed, an attacker feeds the public RSA key as the HMAC secret. The public key becomes the signing key. Game over.
+</box-note>
+
+<hr>
+
+<h2>Flaw Mechanism — Step by Step</h2>
+
+<ol>
+  <li><strong>Context Mismatch:</strong> The code pulls a public key via <code>public_key_pem()</code> to verify legitimate tokens signed by an asymmetric corporate SSO (<code>RS256</code>). Public keys are entirely non-secret by design.</li>
+  <li><strong>Attacker Control:</strong> By sending a token with a modified header reading <code>{"alg": "HS256"}</code>, an attacker forces the decoding library to shift to a symmetric validation context.</li>
+  <li><strong>Key Abuse:</strong> Because <code>HS256</code> is explicitly permitted in <code>VERIFY_ALGS</code>, the decoding library treats the provided <code>key</code> parameter (the public RSA key string) as a raw symmetric HMAC shared secret. An attacker signs a forged payload — granting administrative roles — using the publicly visible key bytes as the HMAC secret, bypassing validation seamlessly.</li>
+</ol>
+
+<hr>
+
+<h2>Remediation</h2>
+
+<p>To mitigate algorithm confusion, restrict allowed validation criteria strictly to the expected cryptographic architecture. Enforce strict separation between algorithms and the keys associated with them, or drop support for legacy symmetric tokens entirely if they are no longer required.</p>
+
+<h3>Secure Implementation</h3>
+
+<code-block language="python">
+<pre><code>def verify_token_secure(token: str) -> dict:
+    key = public_key_pem()
+    try:
+        claims = jwt.decode(
+            token,
+            key=key,
+            algorithms=["RS256"],  # Explicitly remove HS256
+            audience=EXPECTED_AUDIENCE,
+            issuer=EXPECTED_ISSUER,
+        )
+    except jwt.PyJWTError as exc:
+        raise TokenError(str(exc))
+
+    if "role" not in claims:
+        raise TokenError("missing role claim")
+    return claims</code></pre>
+</code-block>
+
+<box-note>
+  <strong>The fix is one line:</strong> Change <code>["RS256", "HS256"]</code> to <code>["RS256"]</code>. Never let a public key double as a symmetric secret.
+</box-note>
+
+<hr>
+
+<h2>Key Takeaways</h2>
+
+<ul>
+  <li><strong>Algorithm allow-lists are security boundaries.</strong> Every algorithm you add expands the attack surface.</li>
+  <li><strong>Public keys are not secrets.</strong> If your verification logic treats them as HMAC secrets under any code path, you have a vulnerability.</li>
+  <li><strong>Prefer explicit over permissive.</strong> <code>algorithms=["RS256"]</code> is safer than <code>["RS256", "HS256"]</code> every time.</li>
+</ul>
+
+</main>
+
+<article-footer></article-footer>
+
+<site-footer></site-footer>

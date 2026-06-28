@@ -2,16 +2,28 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Vishnu Nair — Security Research Notes</title>
-    <link>https://cold-stars-wear.loca.lt</link>
+    <link>https://young-eagles-take.loca.lt</link>
     <description>Deep-dive security research, vulnerability case studies, and technical breakdowns.</description>
     <language>en-us</language>
-    <lastBuildDate>Fri, 26 Jun 2026 00:00:00 +0530</lastBuildDate>
-    <atom:link href="https://cold-stars-wear.loca.lt/rss.xml" rel="self" type="application/rss+xml"/>
+    <lastBuildDate>Sun, 28 Jun 2026 00:00:00 +0530</lastBuildDate>
+    <atom:link href="https://young-eagles-take.loca.lt/rss.xml" rel="self" type="application/rss+xml"/>
 
     <item>
+      <title>GridAdmin JWT — Algorithm Confusion and How HS256 Hijacks RS256 Verification</title>
+      <link>https://young-eagles-take.loca.lt/notes/gridadmin-jwt-code-review/</link>
+      <guid isPermaLink="true">https://young-eagles-take.loca.lt/notes/gridadmin-jwt-code-review/</guid>
+      <pubDate>Sun, 28 Jun 2026 00:00:00 +0530</pubDate>
+      <description><![CDATA[<p>This case study breaks down the <strong>GridAdmin JWT</strong> challenge from <a href="https://www.codereviewlab.com/challenges/cmqrb5jjv00162ngi9xjw1q7y" target="_blank" rel="noopener">Code Review Lab</a>. It exposes a classic <strong>JWT Algorithm Confusion</strong> vulnerability — where a misconfigured verification allow-list lets an attacker forge admin tokens using nothing but a public key.</p>]]></description>
+      <category>jwt</category>
+      <category>security</category>
+      <category>code-review</category>
+      <category>vulnerability</category>
+      <category>auth</category>
+    </item>
+    <item>
       <title>Deconstructing the Token Burn Bug — How Parameter Flipping Enables Unauthorized Asset Destruction</title>
-      <link>https://cold-stars-wear.loca.lt/notes/token-burn-bug-parameter-flipping/</link>
-      <guid isPermaLink="true">https://cold-stars-wear.loca.lt/notes/token-burn-bug-parameter-flipping/</guid>
+      <link>https://young-eagles-take.loca.lt/notes/token-burn-bug-parameter-flipping/</link>
+      <guid isPermaLink="true">https://young-eagles-take.loca.lt/notes/token-burn-bug-parameter-flipping/</guid>
       <pubDate>Fri, 26 Jun 2026 00:00:00 +0530</pubDate>
       <description><![CDATA[<p>In smart contract security, a single typo can separate a secure protocol from total economic collapse. The <strong>Token Burn Bug</strong> from Code Reviewlab demonstrates one of the most devastating yet deceptively simple logic flaws in Solidity: <strong>parameter flipping within authorization mappings</strong>. The failure is not complex math or an EVM edge-case — it's a human-error flaw where variables were transposed during a critical access control check.</p>]]></description>
       <category>solidity</category>
@@ -22,8 +34,8 @@
     </item>
     <item>
       <title>Why FFmpeg Remains a Critical Attack Surface — Multimedia Parsing Risks and Hardening Strategies</title>
-      <link>https://cold-stars-wear.loca.lt/notes/ffmpeg-critical-attack-surface/</link>
-      <guid isPermaLink="true">https://cold-stars-wear.loca.lt/notes/ffmpeg-critical-attack-surface/</guid>
+      <link>https://young-eagles-take.loca.lt/notes/ffmpeg-critical-attack-surface/</link>
+      <guid isPermaLink="true">https://young-eagles-take.loca.lt/notes/ffmpeg-critical-attack-surface/</guid>
       <pubDate>Fri, 26 Jun 2026 00:00:00 +0530</pubDate>
       <description><![CDATA[<p>FFmpeg is the silent backbone of global multimedia processing — powering streaming infrastructure, social media uploads, and video pipelines across the tech sector. But from an AppSec standpoint, it is a <strong>highly volatile, classic attack surface</strong>: a massive C and Assembly codebase parsing inherently untrusted, complex, and malformed binary inputs with no compile-time memory safety guarantees.</p>]]></description>
       <category>security</category>
@@ -34,8 +46,8 @@
     </item>
     <item>
       <title>FitLog OAuth Login — How Exported Activities, Custom URL Schemes, and Missing PKCE Enable Full Account Takeover</title>
-      <link>https://cold-stars-wear.loca.lt/notes/fitlog-oauth-account-takeover/</link>
-      <guid isPermaLink="true">https://cold-stars-wear.loca.lt/notes/fitlog-oauth-account-takeover/</guid>
+      <link>https://young-eagles-take.loca.lt/notes/fitlog-oauth-account-takeover/</link>
+      <guid isPermaLink="true">https://young-eagles-take.loca.lt/notes/fitlog-oauth-account-takeover/</guid>
       <pubDate>Thu, 25 Jun 2026 00:00:00 +0530</pubDate>
       <description><![CDATA[<p>This case study breaks down the <strong>FitLog OAuth Login</strong> challenge from Code Review Lab. It highlights how a security auditor connects the dots between a public component (<code>exported="true"</code>) and an insecure data pathway to uncover a full account takeover.</p>]]></description>
       <category>android</category>
@@ -47,8 +59,8 @@
     </item>
     <item>
       <title>Mastering the Architecture of Secure Rate Limiting — Why Your IP Parsing Logic Is Likely Vulnerable</title>
-      <link>https://cold-stars-wear.loca.lt/notes/secure-rate-limiting-x-forwarded-for/</link>
-      <guid isPermaLink="true">https://cold-stars-wear.loca.lt/notes/secure-rate-limiting-x-forwarded-for/</guid>
+      <link>https://young-eagles-take.loca.lt/notes/secure-rate-limiting-x-forwarded-for/</link>
+      <guid isPermaLink="true">https://young-eagles-take.loca.lt/notes/secure-rate-limiting-x-forwarded-for/</guid>
       <pubDate>Wed, 17 Jun 2026 00:00:00 +0530</pubDate>
       <description><![CDATA[<p>Rate limiting is a foundational pillar of modern application security, protecting downstream resources from Denial of Service (DoS) attacks, brute-force attempts, and API scraping. However, a common architectural anti-pattern exists: developers frequently <strong>write custom logic to parse the <code>X-Forwarded-For</code> header</strong> or blindly trust its first entry.</p>]]></description>
       <category>security</category>
@@ -59,8 +71,8 @@
     </item>
     <item>
       <title>Deconstructing Unsafe Reflection — How Dynamic Instantiation Bypasses Database Validation</title>
-      <link>https://cold-stars-wear.loca.lt/notes/unsafe-reflection-php/</link>
-      <guid isPermaLink="true">https://cold-stars-wear.loca.lt/notes/unsafe-reflection-php/</guid>
+      <link>https://young-eagles-take.loca.lt/notes/unsafe-reflection-php/</link>
+      <guid isPermaLink="true">https://young-eagles-take.loca.lt/notes/unsafe-reflection-php/</guid>
       <pubDate>Tue, 16 Jun 2026 00:00:00 +0530</pubDate>
       <description><![CDATA[<p>A common architectural pattern in modular software design is the dynamic loading of plugins or strategies based on runtime parameters. However, when an application uses <strong>user-supplied input to dynamically instantiate a PHP class</strong>, it frequently introduces a severe vulnerability known as <strong>Arbitrary Object Instantiation</strong> — or Unsafe Reflection.</p>]]></description>
       <category>php</category>
@@ -70,8 +82,8 @@
     </item>
     <item>
       <title>Regression &amp; Information Metrics — Deep-Dive Comparisons</title>
-      <link>https://cold-stars-wear.loca.lt/notes/regression-and-information-metrics/</link>
-      <guid isPermaLink="true">https://cold-stars-wear.loca.lt/notes/regression-and-information-metrics/</guid>
+      <link>https://young-eagles-take.loca.lt/notes/regression-and-information-metrics/</link>
+      <guid isPermaLink="true">https://young-eagles-take.loca.lt/notes/regression-and-information-metrics/</guid>
       <pubDate>Fri, 12 Jun 2026 00:00:00 +0530</pubDate>
       <description><![CDATA[<p>The fundamental divide in supervised machine learning comes down to one question: are you predicting a <strong>number</strong>, or sorting into a <strong>bucket</strong>?</p>]]></description>
       <category>machine-learning</category>
@@ -80,8 +92,8 @@
     </item>
     <item>
       <title>Setting up Hermes Agent under Docker with DeepSeek</title>
-      <link>https://cold-stars-wear.loca.lt/notes/setting-up-hermes-agent/</link>
-      <guid isPermaLink="true">https://cold-stars-wear.loca.lt/notes/setting-up-hermes-agent/</guid>
+      <link>https://young-eagles-take.loca.lt/notes/setting-up-hermes-agent/</link>
+      <guid isPermaLink="true">https://young-eagles-take.loca.lt/notes/setting-up-hermes-agent/</guid>
       <pubDate>Sat, 06 Jun 2026 00:00:00 +0530</pubDate>
       <description><![CDATA[<p>Hermes Agent is an open-source AI agent framework from Nous Research. Unlike a chat interface, it's an <em>operative</em> — the LLM gets a shell, a filesystem, a browser, scheduled cron jobs, and persistent memory across sessions. It doesn't just answer questions; it executes work.</p>]]></description>
       <category>ai</category>
