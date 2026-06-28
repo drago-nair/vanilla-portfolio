@@ -9,6 +9,18 @@
     <atom:link href="https://young-eagles-take.loca.lt/rss.xml" rel="self" type="application/rss+xml"/>
 
     <item>
+      <title>Charity Tokens — ERC677 Callback Reentrancy and the Checks-Effects-Interactions Violation</title>
+      <link>https://young-eagles-take.loca.lt/notes/charity-tokens-erc677-reentrancy/</link>
+      <guid isPermaLink="true">https://young-eagles-take.loca.lt/notes/charity-tokens-erc677-reentrancy/</guid>
+      <pubDate>Sun, 28 Jun 2026 00:00:00 +0530</pubDate>
+      <description><![CDATA[<p>This case study breaks down the <strong>Charity Tokens</strong> challenge from <a href="https://codereviewlab.com/shared/XDd_UvSwFf" target="_blank" rel="noopener">Code Review Lab</a>. It exposes a critical <strong>ERC677 Callback Reentrancy</strong> vulnerability — a violation of the Checks-Effects-Interactions paradigm that lets a malicious beneficiary drain the entire token vault.</p>]]></description>
+      <category>solidity</category>
+      <category>smart-contract</category>
+      <category>reentrancy</category>
+      <category>code-review</category>
+      <category>ethereum</category>
+    </item>
+    <item>
       <title>GridAdmin JWT — Algorithm Confusion and How HS256 Hijacks RS256 Verification</title>
       <link>https://young-eagles-take.loca.lt/notes/gridadmin-jwt-code-review/</link>
       <guid isPermaLink="true">https://young-eagles-take.loca.lt/notes/gridadmin-jwt-code-review/</guid>

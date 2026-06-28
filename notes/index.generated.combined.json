@@ -1,5 +1,19 @@
 [
   {
+    "name": "charity-tokens-erc677-reentrancy",
+    "href": "/notes/charity-tokens-erc677-reentrancy/",
+    "title": "Charity Tokens — ERC677 Callback Reentrancy and the Checks-Effects-Interactions Violation",
+    "date": "2026-06-28",
+    "public": true,
+    "tags": ["solidity", "smart-contract", "reentrancy", "code-review", "ethereum"],
+    "suggestions": [
+      {
+        "href": "/notes/gridadmin-jwt-code-review/",
+        "reason": "newer"
+      }
+    ]
+  },
+  {
     "name": "gridadmin-jwt-code-review",
     "href": "/notes/gridadmin-jwt-code-review/",
     "title": "GridAdmin JWT — Algorithm Confusion and How HS256 Hijacks RS256 Verification",
@@ -7,6 +21,10 @@
     "public": true,
     "tags": ["jwt", "security", "code-review", "vulnerability", "auth"],
     "suggestions": [
+      {
+        "href": "/notes/charity-tokens-erc677-reentrancy/",
+        "reason": "older"
+      },
       {
         "href": "/notes/token-burn-bug-parameter-flipping/",
         "reason": "newer"

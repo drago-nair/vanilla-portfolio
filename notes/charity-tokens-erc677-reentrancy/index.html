@@ -1,0 +1,168 @@
+<!doctype html>
+<meta charset="utf-8"></meta>
+<meta name="viewport" content="width=device-width, initial-scale=1"></meta>
+<link rel="canonical" href="/notes/charity-tokens-erc677-reentrancy/">
+<link rel="stylesheet" href="/common.css"></link>
+<script defer="" src="/common.js"></script>
+
+<title>Charity Tokens — ERC677 Callback Reentrancy and the Checks-Effects-Interactions Violation</title>
+
+<site-header></site-header>
+
+<blog-header>
+  <h1>Charity Tokens — ERC677 Callback Reentrancy and the Checks-Effects-Interactions Violation</h1>
+</blog-header>
+
+<blog-post-info>
+  <time datetime="2026-06-28">28 Jun 2026</time>
+  · 5 min read
+</blog-post-info>
+
+<tag-row>
+  <tag-chip title="solidity"></tag-chip>
+  <tag-chip title="smart-contract"></tag-chip>
+  <tag-chip title="security"></tag-chip>
+  <tag-chip title="reentrancy"></tag-chip>
+  <tag-chip title="code-review"></tag-chip>
+  <tag-chip title="ethereum"></tag-chip>
+</tag-row>
+
+<main appearance="prose">
+
+<p>This case study breaks down the <strong>Charity Tokens</strong> challenge from <a href="https://codereviewlab.com/shared/XDd_UvSwFf" target="_blank" rel="noopener">Code Review Lab</a>. It exposes a critical <strong>ERC677 Callback Reentrancy</strong> vulnerability — a violation of the Checks-Effects-Interactions paradigm that lets a malicious beneficiary drain the entire token vault.</p>
+
+<hr>
+
+<h2>Executive Summary</h2>
+
+<p>The <code>DonationToken.sol</code> smart contract implements a decentralized charity framework utilizing the ERC677 token standard. The platform uses an automated callback mechanic via the <code>transferAndCall</code> interface designed to seamlessly notify beneficiary contracts immediately upon processing incoming donations.</p>
+
+<p>An audit of the implementation revealed a critical <strong>Reentrancy Vulnerability</strong> caused by a violation of the Checks-Effects-Interactions design paradigm. A malicious beneficiary architecture can intercept execution control during the external callback phase and execute recursive calls back into the asset depletion logic, fully draining the underlying token vault before the parent transaction frames resolve.</p>
+
+<hr>
+
+<h2>The Vulnerable Code</h2>
+
+<p>The following code segment contains the core functional sequence within the DonationToken ledger. Note the operational distribution order regarding state adjustments and external invocations:</p>
+
+<code-block language="solidity">
+<pre><code>function transferAndCall(
+    address to,
+    uint256 amount,
+    bytes calldata data
+) external returns (bool) {
+    // 1. CHECK: Verify if the donor holds a sufficient balance
+    require(balances[msg.sender] >= amount, "Insufficient balance");
+
+    // 2. EFFECT: Modify state parameters on the internal ledger
+    balances[msg.sender] -= amount;
+    balances[to] += amount;
+
+    // ⚠️ 3. INTERACTION (THE GLITCH): External call to an untrusted contract
+    if (isContract(to)) {
+        IERC677Receiver(to).onTokenTransfer(msg.sender, amount, data);
+    }
+
+    // 4. FINALIZE: Transaction frame attempts to complete execution cleanly
+    return true;
+}</code></pre>
+</code-block>
+
+<box-note>
+  <strong>The flaw:</strong> State is updated BEFORE the external call. Once control is handed to an untrusted contract via <code>onTokenTransfer</code>, the attacker re-enters before the function can finalize.
+</box-note>
+
+<hr>
+
+<h2>Chronological Exploitation Flow</h2>
+
+<h3>Layer 1: The Ingress Entry (Execution Frame 1)</h3>
+
+<ol>
+  <li>An attacker calls <code>transferAndCall</code> targeting their deployed <code>MaliciousBeneficiary</code> contract. The EVM allocates <strong>Execution Frame 1</strong>.</li>
+  <li>The <code>require</code> check validates balances — it clears.</li>
+  <li>Internal accounting deducts from the attacker and credits the beneficiary contract.</li>
+  <li>Execution reaches <code>IERC677Receiver(to).onTokenTransfer(...)</code>.</li>
+  <li><strong>Critical freeze:</strong> <code>DonationToken</code>'s context pauses at this line. It cannot reach the <code>return true</code> statement. Control is handed to the receiver.</li>
+</ol>
+
+<h3>Layer 2: The Re-entrant Ambush (Execution Frame 2)</h3>
+
+<ol>
+  <li>Inside the attacker's contract, <code>onTokenTransfer</code> immediately calls <code>DonationToken.transferAndCall()</code> a second time.</li>
+  <li>No execution gates or status checks block entry. The EVM builds <strong>Execution Frame 2</strong> on top of the paused Frame 1.</li>
+  <li><strong>Validation illusion:</strong> The <code>require</code> check executes again. Since Frame 1's state changes are already committed, the attacker's contract has already been credited — the nested balance check passes.</li>
+  <li>The contract processes state updates again, reaches the callback line, and freezes Frame 2 — handing control back to the attacker to spawn Frame 3.</li>
+</ol>
+
+<box-note>
+  <strong>The stack consequence:</strong> Frame 1 → Frame 2 → Frame 3 … indefinitely. The contract leaks tokens at every interaction boundary without ever reaching the closing block, until the pool is completely drained.
+</box-note>
+
+<hr>
+
+<h2>Remediation</h2>
+
+<p>To fully secure the asset routing framework, the platform must enforce defensive state boundaries using OpenZeppelin's industry-standard <strong>ReentrancyGuard</strong> component. This integrates an explicit mutex variable directly into the function invocation wrapper.</p>
+
+<h3>How the Mutex Guard Aborts the Loop</h3>
+
+<ol>
+  <li><strong>Initial ingress:</strong> The <code>nonReentrant</code> modifier reads the security flag. Finding it <code>UNLOCKED</code>, it sets it to <code>LOCKED</code> before letting execution pass inside the main code block.</li>
+  <li><strong>Intercept check:</strong> When the attacker attempts a nested re-entry call, the modifier checks the flag a second time.</li>
+  <li><strong>Defensive reversion:</strong> Because the flag reads as <code>LOCKED</code>, the system immediately throws an exception. The nested frame crashes, resetting all pending modifications and preserving token liquidity.</li>
+</ol>
+
+<h3>Secure Implementation</h3>
+
+<code-block language="solidity">
+<pre><code>import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
+contract SecureDonationToken is IERC677, ReentrancyGuard {
+    mapping(address => uint256) public balances;
+
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    function isContract(address account) internal view returns (bool) {
+        return account.code.length > 0;
+    }
+
+    function transferAndCall(
+        address to,
+        uint256 amount,
+        bytes calldata data
+    ) external override nonReentrant returns (bool) {
+        require(balances[msg.sender] >= amount, "Insufficient balance");
+        balances[msg.sender] -= amount;
+        balances[to] += amount;
+
+        emit Transfer(msg.sender, to, amount);
+
+        if (isContract(to)) {
+            IERC677Receiver(to).onTokenTransfer(msg.sender, amount, data);
+        }
+
+        return true;
+    }
+}</code></pre>
+</code-block>
+
+<box-note>
+  <strong>The fix is one modifier:</strong> Add <code>nonReentrant</code> to any function that makes external calls after state changes. One word prevents infinite recursion.
+</box-note>
+
+<hr>
+
+<h2>Key Takeaways</h2>
+
+<ul>
+  <li><strong>Checks-Effects-Interactions is law.</strong> State changes must happen last, or be guarded by a mutex.</li>
+  <li><strong>ERC677's callback is a double-edged sword.</strong> The <code>transferAndCall</code> convenience creates a reentrancy surface every time it's used.</li>
+  <li><strong>ReentrancyGuard is not optional.</strong> For any contract that makes external calls, <code>nonReentrant</code> should be the default, not an afterthought.</li>
+</ul>
+
+</main>
+
+<article-footer></article-footer>
+
+<site-footer></site-footer>
