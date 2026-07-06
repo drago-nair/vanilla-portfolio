@@ -1,0 +1,105 @@
+<!doctype html>
+<meta charset="utf-8"></meta>
+<meta name="viewport" content="width=device-width, initial-scale=1"></meta>
+<link rel="canonical" href="/notes/dao-vote-power-checkpoint-poisoning/">
+<link rel="stylesheet" href="/common.css"></link>
+<script defer="" src="/common.js"></script>
+
+<title>DAO Vote Power — Checkpoint Poisoning via Self-Transfer Validation Flaw in Solidity</title>
+
+<site-header></site-header>
+
+<blog-header>
+  <h1>DAO Vote Power — Checkpoint Poisoning via Self-Transfer Validation Flaw in Solidity</h1>
+</blog-header>
+
+<blog-post-info>
+  <time datetime="2026-06-28">28 Jun 2026</time>
+  · 4 min read
+</blog-post-info>
+
+<tag-row>
+  <tag-chip title="solidity"></tag-chip>
+  <tag-chip title="smart-contract"></tag-chip>
+  <tag-chip title="security"></tag-chip>
+  <tag-chip title="governance"></tag-chip>
+  <tag-chip title="code-review"></tag-chip>
+  <tag-chip title="ethereum"></tag-chip>
+</tag-row>
+
+<main appearance="prose">
+
+<p>This write-up covers the <strong>DAO Vote Power</strong> challenge from <a href="https://codereviewlab.com/shared/faWr9yosC3" target="_blank" rel="noopener">Code Review Lab</a>. It exposes a critical logical flaw in a governance token contract where a missing self-transfer check enables artificial voting power inflation through checkpoint poisoning.</p>
+
+<hr>
+
+<h2>Executive Summary</h2>
+
+<p>The <code>GovCore</code> contract manages historical voting power snapshots using a checkpoint architecture. However, due to a failure to validate identical source and destination addresses (<code>from == to</code>) during standard token transfers, the system suffers an internal ledger state mismatch — enabling exponential checkpoint inflation while the actual balance remains static.</p>
+
+<box-note>
+  <strong>Vulnerability Class:</strong> Governance Logic Subversion / Checkpoint Poisoning / Parameter Validation Flaw
+</box-note>
+
+<hr>
+
+<h2>The Vulnerable Mechanism</h2>
+
+<p>The architectural failure resides in how state tracking changes are divided sequentially:</p>
+
+<code-block language="solidity">
+<pre><code>function _update(address from, address to, uint256 value, bool mint) internal {
+    if (mint) {
+        _totalSupply += value;
+    } else {
+        _balances[from] -= value;
+        _writeCheckpoint(from, _balances[from]);
+    }
+    _balances[to] += value;
+    _writeCheckpoint(to, _balances[to]);
+}</code></pre>
+</code-block>
+
+<hr>
+
+<h2>The Deep Mechanics: Box vs. List Inflation</h2>
+
+<p><strong>How can an attacker generate millions of voting credits if their actual balance never scales?</strong></p>
+
+<p>The answer lies in the fundamental difference between how two state mechanisms operate:</p>
+
+<h3>Wallet Balance (Overwriting a Box)</h3>
+<p>The <code>_balances[account]</code> mapping acts as a solitary slot. During a self-transfer, subtraction reduces it to 0, and immediate addition sets it back. This is a <strong>destructive overwrite</strong> — only the terminal state survives.</p>
+
+<h3>Checkpoint Registry (Appending a List)</h3>
+<p>The checkpoint tracking system functions as a dynamic array. When <code>_writeCheckpoint</code> triggers <strong>twice</strong> within a single transaction loop — once after subtraction, once after addition — it pushes <strong>two independent entries</strong> into the sequence. The array grows; the balance doesn't.</p>
+
+<box-note>
+  <strong>Result:</strong> Running this via a high-velocity script expands the historical snapshot log exponentially, providing vast governance weight while the primary wallet balance remains unchanged.
+</box-note>
+
+<hr>
+
+<h2>Remediation</h2>
+
+<p>The fix is a single guard clause — bypass checkpoint writes entirely when no true positional shift occurs:</p>
+
+<code-block language="solidity">
+<pre><code>function _update(address from, address to, uint256 value, bool mint) internal {
+    // 🛡️ The Fix: Halt process early if context maps to a self-transfer
+    if (from == to && !mint) {
+        return;
+    }
+    // ... proceed with balance subtraction and checkpoint tracking ...
+}</code></pre>
+</code-block>
+
+<box-note>
+  <strong>Self-transfers must be no-ops.</strong> A token sent to yourself should never generate new checkpoint entries. One <code>if</code> statement prevents infinite governance inflation.
+</box-note>
+
+</main>
+
+<article-footer></article-footer>
+
+<site-footer></site-footer>

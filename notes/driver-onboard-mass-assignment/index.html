@@ -1,0 +1,108 @@
+<!doctype html>
+<meta charset="utf-8"></meta>
+<meta name="viewport" content="width=device-width, initial-scale=1"></meta>
+<link rel="canonical" href="/notes/driver-onboard-mass-assignment/">
+<link rel="stylesheet" href="/common.css"></link>
+<script defer="" src="/common.js"></script>
+
+<title>Driver Onboard — Mass Assignment Bypass via Insecure ActiveRecord Chaining in Rails</title>
+
+<site-header></site-header>
+
+<blog-header>
+  <h1>Driver Onboard — Mass Assignment Bypass via Insecure ActiveRecord Chaining in Rails</h1>
+</blog-header>
+
+<blog-post-info>
+  <time datetime="2026-06-28">28 Jun 2026</time>
+  · 4 min read
+</blog-post-info>
+
+<tag-row>
+  <tag-chip title="ruby"></tag-chip>
+  <tag-chip title="rails"></tag-chip>
+  <tag-chip title="security"></tag-chip>
+  <tag-chip title="mass-assignment"></tag-chip>
+  <tag-chip title="code-review"></tag-chip>
+  <tag-chip title="web"></tag-chip>
+</tag-row>
+
+<main appearance="prose">
+
+<p>This write-up covers the <strong>Driver Onboard</strong> challenge from <a href="https://codereviewlab.com/shared/Gjsogd-z7U" target="_blank" rel="noopener">Code Review Lab</a>. It exposes a sophisticated architectural flaw in a Ruby on Rails application where Strong Parameters are bypassed through raw payload access inside an ActiveRecord chain.</p>
+
+<hr>
+
+<h2>Executive Summary</h2>
+
+<p>While the developer strictly declared a Strong Parameters filter interface, a structural backdoor is created by referencing raw payload streams inside an ActiveRecord transactional chain (<code>create_with</code> + <code>find_or_create_by</code>).</p>
+
+<box-note>
+  <strong>Vulnerability Class:</strong> High-Impact Mass Assignment / Parametric Bypass via Insecure ActiveRecord Chaining
+</box-note>
+
+<hr>
+
+<h2>The Vulnerable Implementation</h2>
+
+<p>The code looks deceptive because a proper <code>driver_params</code> filtering pipeline exists. But look at the invocation syntax:</p>
+
+<code-block language="ruby">
+<pre><code>def create
+  # The Chaining Trap: Merging filtered attributes with a raw parameter access path
+  driver = Driver.create_with(driver_params)
+    .find_or_create_by(phone: params[:driver][:phone])
+  if driver.persisted?
+    VerificationService.send_code(driver.phone)
+    render json: { message: 'Verification code sent' }, status: :created
+  end
+end</code></pre>
+</code-block>
+
+<h2>Why Strong Params Failed</h2>
+
+<p><strong>The Misconception:</strong> Developers often view Strong Parameters as a proactive firewall filtering all incoming requests before controller logic kicks off.</p>
+
+<p><strong>The Reality:</strong> Strong Parameters operate on a <strong>lazy-evaluation</strong> basis. They do not clean or modify the original, global <code>params</code> hash. They simply create a new micro-sanitized dictionary when the whitelist method (<code>driver_params</code>) is explicitly called.</p>
+
+<p>By invoking <code>params[:driver][:phone]</code> at the trailing end of the chain, the application circumvents its own sanitization wrapper. ActiveRecord's internal instantiation block matches keys structurally — when it sees an access route touching the live, un-scrubbed parent hash, internal routines pull the rest of the malicious parameter payload directly into the instantiation queue.</p>
+
+<hr>
+
+<h2>The "Single Block of Data" Problem</h2>
+
+<p>When a client submits an HTTP request, the network layer packages the payload as a unified, contiguous entity:</p>
+
+<code-block language="http">
+<pre><code>POST /api/v1/drivers HTTP/1.1
+Host: target.local
+Content-Type: application/json
+
+{"driver":{"name":"Attacker","phone":"+1234","verified":true,"admin":true}}</code></pre>
+</code-block>
+
+<p>Because the entire raw payload sits in active application memory inside the <code>params</code> dictionary, it remains universally queryable. Referencing even a single attribute via an insecure raw access route (<code>params[:driver][:phone]</code>) can pull adjacent malicious attributes (<code>verified: true</code>) along with it during internal framework merging.</p>
+
+<p>This unified-data-block problem also manifests in NoSQL hydration attacks, GraphQL resolver injection, and HTTP Parameter Pollution (HPP).</p>
+
+<hr>
+
+<h2>Remediation</h2>
+
+<p>The fix is one reference change — force lookup constraints to use the scrubbed parameters:</p>
+
+<code-block language="ruby">
+<pre><code># Safe Strategy: Strict constraint isolation using whitelisted parameters only
+driver = Driver.create_with(driver_params)
+  .find_or_create_by(phone: driver_params[:phone])</code></pre>
+</code-block>
+
+<box-note>
+  <strong>Never mix raw params with filtered params in the same chain.</strong> One raw access poisons the entire ActiveRecord merge.
+</box-note>
+
+</main>
+
+<article-footer></article-footer>
+
+<site-footer></site-footer>
