@@ -1,0 +1,134 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="canonical" href="/productivity/">
+<link rel="stylesheet" href="/common.css">
+<script defer src="/common.js"></script>
+<title>Productivity</title>
+
+<site-header></site-header>
+
+<content-header>
+  <h1>Productivity</h1>
+  <div>Daily metrics. Tracked. Synced from my personal dashboard.</div>
+</content-header>
+
+<main>
+  <section class="section single-section center-text" id="date-section">
+    <p id="date-display" style="font-size:1.3em;margin-bottom:8px"></p>
+    <p style="font-size:2.5em;font-weight:bold;margin:8px 0" id="pct-display">—%</p>
+    <p style="font-size:0.85em;opacity:0.6">overall today</p>
+  </section>
+
+  <section class="section" id="metrics-grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:10px">
+  </section>
+
+  <section class="section single-section center-text" id="loading">
+    <p style="opacity:0.5">Loading metrics…</p>
+  </section>
+
+  <section class="section single-section center-text" id="error" style="display:none">
+    <p style="opacity:0.5;color:var(--clr1)">Could not load metrics. Tracker may be offline.</p>
+  </section>
+</main>
+
+<site-footer></site-footer>
+
+<style>
+  #pct-ring {
+    width: 80px; height: 80px; border-radius: 50%; border: 4px solid #374151;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; font-size: 1.4em; margin: 0 auto;
+  }
+  .prod-card {
+    background: var(--card-clr, #131c1a); border-radius: 10px;
+    padding: 16px 20px; border: 1px solid transparent;
+    transition: all 0.2s; display: flex; align-items: center; gap: 14px;
+  }
+  .prod-card:hover { border-color: var(--clr0-dark, #16a34a); }
+  .prod-icon { font-size: 1.8em; width: 44px; text-align: center; flex-shrink: 0; }
+  .prod-info { flex: 1; min-width: 0; }
+  .prod-name { font-weight: 600; margin-bottom: 4px; }
+  .prod-sub { font-size: 0.8em; opacity: 0.6; }
+  .prod-value { font-size: 1.5em; font-weight: 700; flex-shrink: 0; min-width: 50px; text-align: center; }
+  .prod-state {
+    width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+    transition: all 0.3s;
+  }
+  .prod-state.cold { background: #374151; }
+  .prod-state.warm { background: #4ade80; box-shadow: 0 0 8px rgba(74,222,128,0.5); }
+  .prod-state.done { background: #22c55e; box-shadow: 0 0 12px rgba(34,197,94,0.7); animation: pulse 2s infinite; }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(34,197,94,0.5); }
+    50% { box-shadow: 0 0 18px rgba(34,197,94,0.9); }
+  }
+  .prod-bars { display: flex; gap: 2px; margin-top: 6px; }
+  .prod-bars span { width: 6px; height: 14px; border-radius: 2px; background: #374151; transition: all 0.3s; }
+  .prod-bars span.fill-cold { background: #374151; }
+  .prod-bars span.fill-warm { background: #4ade80; box-shadow: 0 0 4px rgba(74,222,128,0.3); }
+  .prod-bars span.fill-done { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,0.5); }
+</style>
+
+<script>
+(async function() {
+  try {
+    const res = await fetch('/data/productivity.json?t=' + Date.now());
+    const data = await res.json();
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('date-display').textContent = data.date || 'Today';
+
+    const pct = data.overall_pct || 0;
+    const pctEl = document.getElementById('pct-display');
+    pctEl.textContent = pct + '%';
+    pctEl.style.color = pct >= 80 ? '#22c55e' : pct >= 50 ? '#4ade80' : '#6b7280';
+
+    const grid = document.getElementById('metrics-grid');
+    if (!data.metrics || data.metrics.length === 0) {
+      grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;opacity:0.5">No data yet. Fire up the tracker!</p>';
+      return;
+    }
+
+    for (const m of data.metrics) {
+      const val = m.value || 0;
+      const target = m.target || 1;
+      const bars = m.type === 'bool' ? '' : buildBars(val, target);
+      const label = m.type === 'bool'
+        ? (val >= 1 ? '✓ done' : '○ pending')
+        : `${val}/${target} ${m.unit}`;
+
+      const card = document.createElement('div');
+      card.className = 'prod-card';
+      card.innerHTML = `
+        <div class="prod-icon">${m.icon}</div>
+        <div class="prod-info">
+          <div class="prod-name">${m.name}</div>
+          <div class="prod-sub">${label}</div>
+          ${bars}
+        </div>
+        <div class="prod-value">${m.type === 'bool' ? (val >= 1 ? '✓' : '—') : val}</div>
+        <div class="prod-state ${m.state}"></div>
+      `;
+      grid.appendChild(card);
+    }
+  } catch(e) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error').style.display = '';
+  }
+})();
+
+function buildBars(current, target) {
+  const segments = target > 5 ? 5 : target;
+  const perSeg = target / segments;
+  let html = '<div class="prod-bars">';
+  for (let i = 0; i < segments; i++) {
+    let fill = (i + 1) * perSeg;
+    let cls = 'fill-cold';
+    if (current >= target) cls = 'fill-done';
+    else if (current >= fill) cls = 'fill-warm';
+    html += `<span class="${cls}"></span>`;
+  }
+  html += '</div>';
+  return html;
+}
+</script>

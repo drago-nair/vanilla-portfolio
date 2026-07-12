@@ -101,6 +101,7 @@ customElements.define(
           alt=""
         />
         ${renderItem("/wares/", "Wares")}
+        ${renderItem("/productivity/", "Productivity")}
         ${renderItem("/music/", "Music")}
         <div class="site-header-indicator"></div>
       </nav>`;
@@ -267,6 +268,7 @@ customElements.define(
           <p>
             <a href="/">Home</a> · <a href="/notes/">Notes</a> ·
             <a href="/about/">About</a> · <a href="/wares/">Software</a> ·
+            <a href="/productivity/">Productivity</a> ·
  <a href="/music/">Music</a>
           </p>
           <p>
