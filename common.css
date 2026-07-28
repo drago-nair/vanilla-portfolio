@@ -495,7 +495,9 @@
       display: inline-flex;
       justify-content: center;
       align-items: center;
-      width: 6ch;
+      width: max-content;
+      min-width: 6ch;
+      flex-shrink: 0;
       height: 36px;
       padding: 0 18px;
       padding: 0 calc(min(18px, -18px + 8vw));

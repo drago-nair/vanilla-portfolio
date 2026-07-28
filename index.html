@@ -647,6 +647,28 @@
     </style>
     <notes-list id="latest-notes">
       <fixed-grid cols="2" gap="2">
+        <a href="/notes/newsletter-preview-rce/">
+          <card-box class="note-pop">
+            <strong>Newsletter Preview — Ruby Backtick RCE</strong>
+            <tag-chip title="ruby"></tag-chip>
+            <tag-chip title="rails"></tag-chip>
+            <tag-chip title="rce"></tag-chip>
+            <tag-chip title="command-injection"></tag-chip>
+            <tag-chip title="code-review"></tag-chip>
+            <time datetime="2026-07-28">28 Jul 2026</time>
+          </card-box>
+        </a>
+        <a href="/notes/storyforge-tales-rce/">
+          <card-box class="note-pop">
+            <strong>StoryForge Tales — PHP assert() RCE</strong>
+            <tag-chip title="php"></tag-chip>
+            <tag-chip title="rce"></tag-chip>
+            <tag-chip title="code-injection"></tag-chip>
+            <tag-chip title="code-review"></tag-chip>
+            <tag-chip title="security"></tag-chip>
+            <time datetime="2026-07-28">28 Jul 2026</time>
+          </card-box>
+        </a>
         <a href="/notes/dao-vote-power-checkpoint-poisoning/">
           <card-box class="note-pop">
             <strong>DAO Vote Power — Checkpoint Poisoning</strong>
@@ -895,7 +917,7 @@
     <card-box class="bento-tall">
       <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
         <span style="font-size:2.5em">🏃</span>
-        <span style="font-size:2em;font-weight:bold;font-style:normal">6</span>
+        <span style="font-size:2em;font-weight:bold;font-style:normal">9</span>
         <span style="font-style:italic">week run streak</span>
       </div>
     </card-box>
@@ -912,11 +934,11 @@
       <span style="font-size:2.5em">🔥</span>
       <span style="font-size:2em;font-weight:bold;font-style:normal"><duo-streak-count>1324</duo-streak-count></span>
       <span style="font-style:italic">day streak</span>
-      <span style="font-size:0.85em;opacity:0.7">Learning: Japanese 🇯🇵</span>
+      <span style="font-size:0.85em;opacity:0.7">Learning: Japanese 🇯🇵 · Italian 🇮🇹</span>
     </div>
     <script>
       (() => {
-        const STREAK_START = new Date("2022-09-12");
+        const STREAK_START = new Date("2022-10-21");
         const today = new Date();
         const diffDays = Math.floor((today - STREAK_START) / (1000 * 60 * 60 * 24));
         const el = document.getElementById("duo-streak-card")?.querySelector("duo-streak-count");

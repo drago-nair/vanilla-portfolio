@@ -1,0 +1,200 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="canonical" href="/notes/delegate-vote-permit-authentication-bypass/">
+<link rel="stylesheet" href="/common.css">
+<script defer src="/common.js"></script>
+
+<title>Delegate Vote Permit — Authentication Bypass via Unchecked ecrecover and Uninitialized Guardian in Solidity</title>
+
+<site-header></site-header>
+
+<blog-header>
+  <h1>Delegate Vote Permit — Authentication Bypass via Unchecked ecrecover and Uninitialized Guardian in Solidity</h1>
+</blog-header>
+
+<blog-post-info>
+  <time datetime="2026-07-12">12 Jul 2026</time>
+  · 6 min read
+</blog-post-info>
+
+<tag-row>
+  <tag-chip title="solidity"></tag-chip>
+  <tag-chip title="smart-contract"></tag-chip>
+  <tag-chip title="security"></tag-chip>
+  <tag-chip title="code-review"></tag-chip>
+  <tag-chip title="vulnerability"></tag-chip>
+  <tag-chip title="ethereum"></tag-chip>
+  <tag-chip title="eip-712"></tag-chip>
+  <tag-chip title="authentication"></tag-chip>
+</tag-row>
+
+<main appearance="prose">
+
+<p>This write-up breaks down the <strong>Delegate Vote Permit</strong> challenge from <a href="https://www.codereviewlab.com/shared/zQazOYQekP" target="_blank" rel="noopener">Code Review Lab</a>. It exposes a <strong>Critical Authentication Bypass</strong> — a "perfect storm" interaction between two code flaws that together let an attacker permanently circumvent signature verification and seize administrative control, without ever holding a private key.</p>
+
+<box-note>
+  <strong>Severity:</strong> Critical &nbsp;·&nbsp; <strong>Class:</strong> Authentication Bypass / Logical Flaw &nbsp;·&nbsp; <strong>Platform:</strong> Solidity ^0.8.19 / EVM
+</box-note>
+
+<hr>
+
+<h2>The Contract: Gasless Delegation via EIP-712</h2>
+
+<p>The <code>VoteDelegate</code> contract implements an off-chain, gasless delegation mechanism using <strong>EIP-712 typed signatures</strong>. Token holders sign a permit off-chain, which a third-party relayer submits to the blockchain on their behalf — no gas spent by the delegator. A <code>guardian</code> role exists for emergency delegation overrides that bypass sequential nonce tracking.</p>
+
+<h2>The Two Flaws</h2>
+
+<h3>Flaw #1: Uninitialized Guardian</h3>
+
+<p>The contract declares an <code>address public guardian</code> — meant for emergency overrides — but <strong>never initializes it</strong>. No constructor assignment, no setup function. In Solidity, uninitialized state variables default to their zero-state:</p>
+
+<code-block language="solidity">
+<pre><code>guardian = address(0);  // 0x0000000000000000000000000000000000000000</code></pre>
+</code-block>
+
+<p>This means the guardian role is permanently bound to the <strong>zero address</strong> — an account nobody controls, or so it seems.</p>
+
+<h3>Flaw #2: Unchecked ecrecover Return Value</h3>
+
+<p>The <code>delegateBySig</code> function uses the EVM precompile <code>ecrecover</code> to recover a signer address from signature parameters. Crucially:</p>
+
+<code-block language="solidity">
+<pre><code>address signer = ecrecover(digest, v, r, s);
+// No check: signer != address(0)</code></pre>
+</code-block>
+
+<p>When <code>ecrecover</code> receives malformed or garbage signature parameters, it does <strong>not</strong> revert. It silently returns <code>address(0)</code>.</p>
+
+<hr>
+
+<h2>The Exploit Chain</h2>
+
+<p>Neither flaw is catastrophic alone. Combined, they produce a total breakdown of access control.</p>
+
+<ol>
+  <li><strong>Payload Injection:</strong> Attacker calls <code>delegateBySig</code> with arbitrary garbage signature parameters — <code>v = 0, r = 0x0, s = 0x0</code>.</li>
+  <li><strong>Recovery Failure:</strong> <code>ecrecover</code> fails silently and returns <code>address(0)</code>. The variable <code>signer</code> is now <code>address(0)</code>.</li>
+  <li><strong>Guardian Bypass:</strong> The access control check <code>if (signer != guardian)</code> evaluates <code>address(0) != address(0)</code> — which is <strong>false</strong>. The conditional block is skipped.</li>
+  <li><strong>Nonce Gate Circumvented:</strong> The replay-protection constraint <code>require(nonce == nonces[signer]++)</code> is inside that skipped block. The attacker passes through completely unchecked.</li>
+</ol>
+
+<box-note>
+  <strong>The result:</strong> The attacker authenticates as the guardian without ever providing a valid signature. Infinite arbitrary writes to the <code>delegateOf</code> mapping. Full administrative control.
+</box-note>
+
+<h3>Vulnerable Code</h3>
+
+<code-block language="solidity">
+<pre><code>contract VoteDelegate {
+    bytes32 public constant DELEGATION_TYPEHASH = keccak256(
+        "Delegation(address delegate,uint256 nonce,uint256 expiry)"
+    );
+    IGovToken public immutable token;
+
+    // Flaw #1: Never initialized
+    address public guardian;
+
+    mapping(address => address) public delegateOf;
+    mapping(address => uint256) public nonces;
+
+    function delegateBySig(
+        address delegate, uint256 nonce, uint256 expiry,
+        uint8 v, bytes32 r, bytes32 s
+    ) external {
+        require(block.timestamp <= expiry, "permit expired");
+        bytes32 structHash = keccak256(
+            abi.encode(DELEGATION_TYPEHASH, delegate, nonce, expiry)
+        );
+        bytes32 digest = EIP712Domain
+            .domainSeparator("VoteDelegate")
+            .toTypedDataHash(structHash);
+
+        // Flaw #2: Return value never checked against address(0)
+        address signer = ecrecover(digest, v, r, s);
+
+        // Exploit: address(0) != address(0) → false → bypass
+        if (signer != guardian) {
+            require(nonce == nonces[signer]++, "bad nonce");
+        }
+        delegateOf[signer] = delegate;
+        emit Delegated(signer, delegate);
+    }
+}</code></pre>
+</code-block>
+
+<hr>
+
+<h2>Remediation</h2>
+
+<p>Two defensive measures close this attack surface completely:</p>
+
+<ol>
+  <li><strong>Validate ecrecover output:</strong> Always check <code>require(signer != address(0), "invalid signature")</code> after every <code>ecrecover</code> call.</li>
+  <li><strong>Initialize privileged roles in the constructor:</strong> Never let an admin address default to <code>address(0)</code>. Set it explicitly and enforce non-zero at construction time.</li>
+</ol>
+
+<h3>Corrected Implementation</h3>
+
+<code-block language="solidity">
+<pre><code>contract VoteDelegateSecured {
+    bytes32 public constant DELEGATION_TYPEHASH = keccak256(
+        "Delegation(address delegate,uint256 nonce,uint256 expiry)"
+    );
+    IGovToken public immutable token;
+    address public guardian;
+
+    mapping(address => address) public delegateOf;
+    mapping(address => uint256) public nonces;
+
+    event Delegated(address indexed holder, address indexed delegate);
+
+    constructor(IGovToken _token, address _guardian) {
+        require(_guardian != address(0), "Invalid guardian address");
+        token = _token;
+        guardian = _guardian;
+    }
+
+    function delegateBySig(
+        address delegate, uint256 nonce, uint256 expiry,
+        uint8 v, bytes32 r, bytes32 s
+    ) external {
+        require(block.timestamp <= expiry, "permit expired");
+        bytes32 structHash = keccak256(
+            abi.encode(DELEGATION_TYPEHASH, delegate, nonce, expiry)
+        );
+        bytes32 digest = EIP712Domain
+            .domainSeparator("VoteDelegate")
+            .toTypedDataHash(structHash);
+
+        address signer = ecrecover(digest, v, r, s);
+
+        // Remediation 1: Ensure signature recovery didn't fail
+        require(signer != address(0), "zero address signer");
+
+        // Remediation 2: Guardian bypass now safely tracks initialized state
+        if (signer != guardian) {
+            require(nonce == nonces[signer]++, "bad nonce");
+        }
+        delegateOf[signer] = delegate;
+        emit Delegated(signer, delegate);
+    }
+}</code></pre>
+</code-block>
+
+<hr>
+
+<h2>Key Takeaways</h2>
+
+<ul>
+  <li><strong>Never skip the zero-address check on ecrecover.</strong> It's the cheapest insurance policy in Solidity — one <code>require</code> that prevents total authentication collapse.</li>
+  <li><strong>Uninitialized state is a privilege escalation vector.</strong> When an admin address defaults to <code>address(0)</code>, any code path that reaches <code>address(0)</code> becomes an admin path.</li>
+  <li><strong>Two low-severity flaws can chain into a Critical.</strong> Alone, an uninitialized variable is informational. Alone, a missing zero-check is medium at worst. Together? Game over.</li>
+  <li><strong>ecrecover is a silent failure precompile.</strong> Unlike most Solidity operations, it doesn't revert on bad input — it returns <code>address(0)</code> and keeps executing. Always validate.</li>
+</ul>
+
+</main>
+
+<article-footer></article-footer>
+
+<site-footer></site-footer>

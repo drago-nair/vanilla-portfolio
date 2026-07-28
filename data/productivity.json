@@ -1,1 +1,33 @@
-{"date": "2026-07-11", "metrics": [], "overall_pct": 0}
+{
+  "date": "2026-07-28",
+  "overall_pct": 100,
+  "metrics": [
+    {
+      "name": "HTB Weekly Streak",
+      "icon": "🟢",
+      "value": 7,
+      "target": 7,
+      "unit": "weeks",
+      "type": "count",
+      "state": "done"
+    },
+    {
+      "name": "Running Weekly Streak",
+      "icon": "🏃",
+      "value": 9,
+      "target": 9,
+      "unit": "weeks",
+      "type": "count",
+      "state": "done"
+    },
+    {
+      "name": "Duolingo Daily Streak",
+      "icon": "🔥",
+      "value": 1376,
+      "target": 1376,
+      "unit": "days",
+      "type": "count",
+      "state": "done"
+    }
+  ]
+}

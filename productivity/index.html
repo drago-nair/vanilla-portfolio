@@ -14,6 +14,83 @@
 </content-header>
 
 <main>
+  <!-- ── Streaks Section ── -->
+  <section class="section" style="margin-bottom:40px">
+    <h2 style="text-align:center;margin-bottom:24px;font-size:1.1em;text-transform:uppercase;letter-spacing:2px;opacity:0.6">Active Streaks</h2>
+    <div class="streaks-grid">
+      <!-- HTB -->
+      <card-box class="streak-card">
+        <div class="streak-icon" style="color:#9fef00">🟢</div>
+        <div class="streak-label">Hack The Box</div>
+        <div class="streak-value"><htb-streak>—</htb-streak></div>
+        <div class="streak-unit">week streak</div>
+        <div class="streak-sub"><htb-badges>—</htb-badges> badges · <htb-rank>—</htb-rank></div>
+        <div class="streak-bar">
+          <div class="streak-bar-fill htb-fill" style="width:0%"></div>
+        </div>
+      </card-box>
+
+      <!-- Running -->
+      <card-box class="streak-card">
+        <div class="streak-icon">🏃</div>
+        <div class="streak-label">Running</div>
+        <div class="streak-value"><run-streak>—</run-streak></div>
+        <div class="streak-unit">week streak</div>
+        <div class="streak-bar">
+          <div class="streak-bar-fill run-fill" style="width:0%"></div>
+        </div>
+      </card-box>
+
+      <!-- Duolingo -->
+      <card-box class="streak-card">
+        <div class="streak-icon">🔥</div>
+        <div class="streak-label">Duolingo</div>
+        <div class="streak-value"><duo-streak>—</duo-streak></div>
+        <div class="streak-unit">day streak</div>
+        <div class="streak-bar">
+          <div class="streak-bar-fill duo-fill" style="width:0%"></div>
+        </div>
+        <div class="streak-sub">Learning: Japanese 🇯🇵 · Italian 🇮🇹</div>
+      </card-box>
+
+      <!-- Code Review Lab -->
+      <card-box class="streak-card">
+        <div class="streak-icon" style="color:#a78bfa">🔬</div>
+        <div class="streak-label">Code Review Lab</div>
+        <div class="streak-value">240<span style="font-size:0.4em;opacity:0.5">/240</span></div>
+        <div class="streak-unit">challenges cleared</div>
+        <div class="streak-bar">
+          <div class="streak-bar-fill crl-fill" style="width:100%"></div>
+        </div>
+      </card-box>
+
+      <!-- GitHub -->
+      <card-box class="streak-card">
+        <div class="streak-icon">🐙</div>
+        <div class="streak-label">GitHub</div>
+        <div class="streak-value"><gh-week>—</gh-week></div>
+        <div class="streak-unit">contribs this week</div>
+        <div class="streak-bar">
+          <div class="streak-bar-fill gh-fill" style="width:0%"></div>
+        </div>
+        <div class="streak-sub"><gh-year>—</gh-year> this year</div>
+      </card-box>
+
+      <!-- Notes -->
+      <card-box class="streak-card">
+        <div class="streak-icon">📝</div>
+        <div class="streak-label">Notes</div>
+        <div class="streak-value">16</div>
+        <div class="streak-unit">published</div>
+        <div class="streak-bar">
+          <div class="streak-bar-fill notes-fill" style="width:53%"></div>
+        </div>
+        <div class="streak-sub">security research</div>
+      </card-box>
+    </div>
+  </section>
+
+  <!-- ── Daily Metrics Section ── -->
   <section class="section single-section center-text" id="date-section">
     <p id="date-display" style="font-size:1.3em;margin-bottom:8px"></p>
     <p style="font-size:2.5em;font-weight:bold;margin:8px 0" id="pct-display">—%</p>
@@ -35,6 +112,100 @@
 <site-footer></site-footer>
 
 <style>
+  /* ── Streaks Grid ── */
+  .streaks-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    max-width: 780px;
+    margin: 0 auto;
+  }
+  @media (max-width: 640px) {
+    .streaks-grid { grid-template-columns: 1fr; max-width: 340px; }
+  }
+
+  /* ── Streak Card ── */
+  .streak-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 24px 16px 20px;
+    text-align: center;
+    border: 1px solid var(--clr0-dark, #16a34a);
+    border-radius: 12px;
+    background: var(--card-clr, #131c1a);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    cursor: default;
+  }
+  .streak-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(34,197,94,0.12);
+    border-color: var(--clr0, #22c55e);
+  }
+
+  .streak-icon {
+    font-size: 2.4em;
+    line-height: 1;
+  }
+
+  .streak-label {
+    font-family: var(--display-font);
+    font-size: 0.8em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    opacity: 0.7;
+    margin-top: 2px;
+  }
+
+  .streak-value {
+    font-size: 3em;
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, var(--clr0, #22c55e), #4ade80);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .streak-unit {
+    font-size: 0.8em;
+    font-style: italic;
+    opacity: 0.5;
+    margin-top: -2px;
+  }
+
+  .streak-sub {
+    font-size: 0.75em;
+    opacity: 0.45;
+    margin-top: 2px;
+  }
+
+  /* ── Streak Progress Bar ── */
+  .streak-bar {
+    width: 100%;
+    height: 4px;
+    background: #1e2939;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  .streak-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--clr0-dark, #16a34a), var(--clr0, #22c55e));
+    transition: width 0.8s var(--ease);
+  }
+  .htb-fill { background: linear-gradient(90deg, #65a30d, #9fef00); }
+  .run-fill { background: linear-gradient(90deg, var(--clr0-dark, #16a34a), var(--clr0, #22c55e)); }
+  .duo-fill { background: linear-gradient(90deg, #f59e0b, #fb923c); }
+  .crl-fill { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+  .gh-fill { background: linear-gradient(90deg, #6e7681, #8b949e); }
+  .notes-fill { background: linear-gradient(90deg, #f59e0b, #eab308); }
+
+  /* ── Metrics Cards (unchanged) ── */
   #pct-ring {
     width: 80px; height: 80px; border-radius: 50%; border: 4px solid #374151;
     display: flex; align-items: center; justify-content: center;
@@ -70,6 +241,42 @@
 </style>
 
 <script>
+// ── Load Streaks ──
+(async function loadStreaks() {
+  // HTB
+  try {
+    const res = await fetch('/data/htb-stats.json?t=' + Date.now());
+    const d = await res.json();
+    document.querySelector('htb-streak').textContent = d.streak;
+    document.querySelector('htb-badges').textContent = d.badges;
+    document.querySelector('htb-rank').textContent = d.rank;
+    document.querySelector('.htb-fill').style.width = Math.min((d.streak / 7) * 100, 100) + '%';
+  } catch(e) {}
+
+  // GitHub
+  try {
+    const res = await fetch('/data/github-stats.json?t=' + Date.now());
+    const d = await res.json();
+    document.querySelector('gh-week').textContent = d.week;
+    document.querySelector('gh-year').textContent = d.year_total;
+    document.querySelector('.gh-fill').style.width = Math.min((d.week / 5) * 100, 100) + '%';
+  } catch(e) {}
+
+  // Running — hardcoded from index.html
+  document.querySelector('run-streak').textContent = '9';
+  document.querySelector('.run-fill').style.width = Math.min((9 / 7) * 100, 100) + '%';
+
+  // Duolingo
+  (() => {
+    const STREAK_START = new Date("2022-10-21");
+    const today = new Date();
+    const days = Math.floor((today - STREAK_START) / (1000 * 60 * 60 * 24));
+    document.querySelector('duo-streak').textContent = days;
+    document.querySelector('.duo-fill').style.width = Math.min((days / 500) * 100, 100) + '%';
+  })();
+})();
+
+// ── Load Daily Metrics ──
 (async function() {
   try {
     const res = await fetch('/data/productivity.json?t=' + Date.now());
@@ -84,12 +291,15 @@
     pctEl.style.color = pct >= 80 ? '#22c55e' : pct >= 50 ? '#4ade80' : '#6b7280';
 
     const grid = document.getElementById('metrics-grid');
-    if (!data.metrics || data.metrics.length === 0) {
-      grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;opacity:0.5">No data yet. Fire up the tracker!</p>';
+    const streakMetrics = ['HTB Weekly Streak', 'Running Weekly Streak', 'Duolingo Daily Streak'];
+    const filtered = (data.metrics || []).filter(m => !streakMetrics.includes(m.name));
+
+    if (filtered.length === 0) {
+      grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;opacity:0.5">No other metrics tracked today.</p>';
       return;
     }
 
-    for (const m of data.metrics) {
+    for (const m of filtered) {
       const val = m.value || 0;
       const target = m.target || 1;
       const bars = m.type === 'bool' ? '' : buildBars(val, target);
