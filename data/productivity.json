@@ -4,7 +4,7 @@
   "metrics": [
     {
       "name": "HTB Weekly Streak",
-      "icon": "🟢",
+      "icon": "🛡️",
       "value": 7,
       "target": 7,
       "unit": "weeks",

@@ -304,7 +304,7 @@ customElements.define(
             <img
               class="md-icon pixelated invert-on-hover"
               alt="GitHub"
-              src="/icons/github.png"
+              src="/images/github-logo.jpg"
               loading="lazy"
             />
           </a>
