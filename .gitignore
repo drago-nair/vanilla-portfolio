@@ -1,0 +1,10 @@
+# Environment / secrets — NEVER commit
+.env
+.env.*
+!.env.example
+*.local
+secrets*
+*.pem
+*.key
+.credentials
+credentials.json
